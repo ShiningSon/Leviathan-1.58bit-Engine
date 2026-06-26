@@ -59,3 +59,25 @@ Tested on: **Intel Core i5-13600KF (6 P-Cores, 8 E-Cores) | 32GB RAM | Win11 Hos
 ⚡ Quick Start Guide
 1. Environment Preparation
 Ensure your development environment contains a functional C++ compiler (MSVC on Windows with OpenMP or GCC on Linux) and PyTorch installed.
+
+pip install torch safetensors huggingface_hub transformers
+
+2. Forge the Binary Ammunition (Quantization)
+Run the automated streaming pipeline to download and compress a target 20B model from HuggingFace without exceeding your RAM capacity:
+
+python quantizer.py
+
+This processes the tensors sequentially and dumps extreme_20b_weights.bin and extreme_20b_meta.json directly into your workspace directory.
+
+3. Ignite the Leviathan Core Engine
+Execute the main C++ engine script to initialize the physical memory cloning pipeline and launch the extreme execution shell:
+
+python engine.py
+
+```
+
+📜 License
+Distributed under the MIT License. See LICENSE for more information.
+
+🤝 Contributing
+System optimization contributions are welcome. If you can further optimize the AVX2 loop profiles or implement direct AVX-512 vector lanes without triggering memory allocation faults, please submit a Pull Request.
