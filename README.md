@@ -81,3 +81,11 @@ Distributed under the MIT License. See LICENSE for more information.
 
 🤝 Contributing
 System optimization contributions are welcome. If you can further optimize the AVX2 loop profiles or implement direct AVX-512 vector lanes without triggering memory allocation faults, please submit a Pull Request.
+
+## ⚠️ Limitations & Known Issues
+
+We value transparency in the open-source community. Please be aware of the following structural limitations before evaluating this engine:
+
+* **Quantization Collapse (PTQ vs. QAT):** This engine is strictly designed for **Native 1.58-bit models** trained via Quantization-Aware Training (QAT), such as `BitNet b1.58`. Applying Post-Training Quantization (PTQ) to standard FP16 models and running them through this engine will result in severe quantization collapse (meaningless text output or immediate EOS). This is a fundamental mathematical limitation of the 1.58-bit architecture, not a bug in the engine codebase.
+* **Theoretical 120B Performance:** The 352 TPS for the 120B model mentioned in the performance table is a **theoretical linear extrapolation** based on the pure compute-bound performance of smaller models. It does *not* account for the Memory Wall (RAM bandwidth bottleneck) encountered in actual local hardware environments. Real-world performance on massive models will be heavily bottlenecked by memory bandwidth.
+* **SIMD Implementation Update:** The initial release utilized OpenMP multi-threading without explicit SIMD vectorization. As of the latest patch, true `_mm256_*` AVX2 Intrinsic instructions have been implemented in the core bit-linear computation kernels to properly claim AVX2 hardware acceleration.
