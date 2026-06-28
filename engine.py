@@ -210,11 +210,23 @@ void bitlinear_dispatch(
     int in_dim,
     int out_dim,
     int32_t* out_accum,
-    int top_k,
+    int top_k_param,
+    bool top_k_is_ratio,
     TopKDeltaState* topk_state
 ) {
-    if (top_k > 0 && top_k < in_dim && topk_state != nullptr) {
-        const std::vector<int>& active_indices = update_topk_delta_state(*topk_state, x_quant, in_dim, top_k);
+    // Resolve the effective K for THIS layer. When --top-k is given as a ratio
+    // (0..100), K scales with in_dim so wide layers (e.g. down_proj in_dim=6912)
+    // keep the same fraction of their activations as narrow layers. A flat
+    // absolute K punished wide layers disproportionately: K=512 on in_dim=6912
+    // kept only 7% of activations and collapsed generation.
+    int effective_k = top_k_param;
+    if (top_k_is_ratio && top_k_param > 0) {
+        const float density = std::min(1.0f, std::max(0.0f, top_k_param / 100.0f));
+        effective_k = static_cast<int>(std::ceil(density * static_cast<float>(in_dim)));
+    }
+
+    if (effective_k > 0 && effective_k < in_dim && topk_state != nullptr) {
+        const std::vector<int>& active_indices = update_topk_delta_state(*topk_state, x_quant, in_dim, effective_k);
         bitlinear_topk_sparse(x_quant, packed_w, in_dim, out_dim, active_indices, out_accum);
     } else {
         bitlinear_dense_fused(x_quant, packed_w, in_dim, out_dim, out_accum);
@@ -372,6 +384,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
     int64_t eos_id,
     std::vector<int64_t> stop_token_ids,
     int64_t top_k_i64,
+    bool top_k_is_ratio,
     int64_t architecture_mode,
     int64_t activation_mode,
     double rope_theta,
@@ -453,13 +466,13 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_x = 1.0f;
             quantize_absmax(hidden_q.data(), scale_x, norm_state.data(), hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, state_slot(l, 0));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 0));
             dequantize(q.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 0], hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, state_slot(l, 1));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 1));
             dequantize(k.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 1], kv_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, state_slot(l, 2));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 2));
             dequantize(v.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 2], kv_dim);
 
             if (use_mlgru) {
@@ -496,7 +509,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_attn = 1.0f;
             rms_norm_weighted(attn_normed.data(), attn_out.data(), attn_sub_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_attn, attn_normed.data(), hidden_dim);
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, state_slot(l, 3));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 3));
 
             const float attn_factor = layer_gammas[w_idx + 3] / std::max(scale_attn, 1e-8f);
             #pragma omp parallel for schedule(static)
@@ -505,12 +518,12 @@ std::vector<int64_t> force_evolved_generate_cpp(
             rms_norm_weighted(ffn_norm_state.data(), hidden_state.data(), ffn_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_x, ffn_norm_state.data(), hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, state_slot(l, 4));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 4));
             dequantize(gate_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 4], inter_dim);
 
             const bool has_up_proj = layer_weights[w_idx + 5].numel() > 0;
             if (has_up_proj) {
-                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, state_slot(l, 5));
+                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 5));
                 dequantize(up_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 5], inter_dim);
             }
 
@@ -534,7 +547,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_ffn = 1.0f;
             rms_norm_weighted(ffn_sub_normed.data(), ffn_act.data(), ffn_sub_norm_w, inter_dim);
             quantize_absmax(hidden_q.data(), scale_ffn, ffn_sub_normed.data(), inter_dim);
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, state_slot(l, 6));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 6));
 
             const float down_factor = layer_gammas[w_idx + 6] / std::max(scale_ffn, 1e-8f);
             #pragma omp parallel for schedule(static)
@@ -590,7 +603,7 @@ def get_runtime():
     print("[BUILD] Compiling Leviathan sparse SIMD runtime...")
     try:
         _evolved_engine = load_inline(
-            name="leviathan_phase52_topk_rescale",
+            name="leviathan_phase53_topk_ratio",
             cpp_sources=[cpp_source],
             functions=["force_evolved_generate_cpp"],
             extra_cflags=_extension_flags(),
@@ -627,7 +640,7 @@ class RestoredBitNet:
         bin_path: str = "leviathan_native.bin",
         meta_path: str = "leviathan_native_meta.json",
         architecture: str = "transformer",
-        top_k: int = 0,
+        top_k: float = 0.0,
         prompt_template: str = "auto",
     ):
         with open(meta_path, "r", encoding="utf-8") as f:
@@ -635,7 +648,18 @@ class RestoredBitNet:
 
         self.architecture = architecture
         self.architecture_mode = 1 if architecture == "mlgru" else 0
-        self.top_k = max(0, int(top_k))
+
+        # Interpret --top-k: a fraction 0<f<=1 is a per-layer density ratio
+        # (recommended, scales K with in_dim); a value >1 is a flat absolute K
+        # (legacy). The C++ runtime receives both and resolves the effective K
+        # per layer in bitlinear_dispatch.
+        top_k = float(top_k)
+        if 0 < top_k <= 1.0:
+            self.top_k = int(round(top_k * 100))   # density as 0..100
+            self.top_k_is_ratio = True
+        else:
+            self.top_k = max(0, int(top_k))
+            self.top_k_is_ratio = False
         self.prompt_template = prompt_template
 
         target_model = self.meta.get("model_name", "microsoft/bitnet-b1.58-2B-4T-bf16")
@@ -808,12 +832,15 @@ class RestoredBitNet:
             ffn_sub_norm = find_norm_weight(layer, ["ffn_sub_norm"], self.inter_dim)
             self.layer_norms.extend([attn_norm, ffn_norm, attn_sub_norm, ffn_sub_norm])
 
+        top_k_desc = "dense"
+        if self.top_k:
+            top_k_desc = f"{self.top_k / 100.0:.0%} per layer" if self.top_k_is_ratio else str(self.top_k)
         print(
             "[SYSTEM] Runtime ready "
             f"(layers={self.num_layers}, hidden={self.hidden_dim}, inter={self.inter_dim}, "
             f"heads={self.num_heads}, kv_heads={self.num_kv_heads}, kv_dim={self.kv_dim}, "
             f"act={self.hidden_act}, rope_theta={self.rope_theta:g}, "
-            f"architecture={self.architecture}, top_k={self.top_k or 'dense'})."
+            f"architecture={self.architecture}, top_k={top_k_desc})."
         )
 
     def format_prompt(self, prompt_text: str) -> str:
@@ -860,6 +887,7 @@ class RestoredBitNet:
             eos_id,
             stop_token_ids,
             self.top_k,
+            self.top_k_is_ratio,
             self.architecture_mode,
             self.activation_mode,
             self.rope_theta,
@@ -884,7 +912,11 @@ def main() -> None:
     parser.add_argument("--bin", default="leviathan_native.bin")
     parser.add_argument("--meta", default="leviathan_native_meta.json")
     parser.add_argument("--max-new", type=int, default=150)
-    parser.add_argument("--top-k", type=int, default=0, help="Activate only the largest K input activations per bitlinear layer")
+    parser.add_argument("--top-k", type=float, default=0.0,
+                        help="Activation sparsity. A fraction 0<f<=1 (e.g. 0.8 keeps the largest 80%% "
+                             "per layer) is recommended: it scales K with each layer's width so wide "
+                             "layers (down_proj in_dim=6912) don't collapse. An integer >1 (e.g. 512) "
+                             "is treated as a flat absolute K (legacy, harsh on wide layers).")
     parser.add_argument("--architecture", choices=["transformer", "mlgru"], default="transformer")
     parser.add_argument("--prompt-template", choices=["auto", "plain", "qa"], default="auto")
     args = parser.parse_args()
