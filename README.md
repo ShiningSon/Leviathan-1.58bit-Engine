@@ -1,91 +1,154 @@
 # Leviathan-1.58bit-Engine
 
-# The Leviathan Engine: High-Performance 1.58-Bit LLM Inference Engine Engine Written in C++/OpenMP
+Leviathan is a local CPU inference engine for native 1.58-bit ternary language
+models. Its target is not generic post-training quantization of normal FP16
+LLMs; the engine is built for QAT/native BitNet-style checkpoints whose linear
+weights can live as ternary values `{-1, 0, 1}`.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![C++20](https://img.shields.io/badge/C%2B%2B-20-orange.svg)](https://en.cpphell.com/)
+The core direction is simple:
 
-**The Leviathan Engine** is an extreme-performance, bare-metal C++ inference core designed to run massive LLMs (up to 20B/70B scales) on consumer-grade desktop hardware. By implementing an **Out-of-Core Streaming Quantizer** alongside a highly optimized **MatMul-Free AVX2 SIMD Acceleration Layer**, this engine completely bypasses standard PyTorch/CUDA overheads, utilizing 100% of local CPU and RAM bandwidth.
+1. keep the model package small with row-major 2-bit ternary weights;
+2. run bitlinear layers through CPU SIMD instead of PyTorch/CUDA kernels;
+3. reduce per-token work with Top-K activation sparsity and delta hashing;
+4. expose an experimental MatMul-Free MLGRU path that removes attention-map
+   computation for compatible recurrent checkpoints.
 
-Initially forged and stress-tested on a mid-range consumer system (**Intel Core i5-13600KF (14 Cores / 20 Threads) and 32GB DDR5 RAM**), the engine achieves an unprecedented inference performance of **6.3+ Tokens/Second on a 20B Parameter Model** without a single megabyte of GPU VRAM allocation.
+## What Is Implemented
 
----
+### 1. Litespark-style SIMD bitlinear
 
-## 🚀 Key Architectural Innovations
+`engine.py` compiles a C++ runtime through `torch.utils.cpp_extension`. The
+runtime consumes INT8 activations and row-packed ternary weights, then applies
+hardware-friendly sign/add accumulation.
 
-### 1. Bare-Metal SIMD Acceleration (`_mm256_sign_epi8` Emulation)
-Standard matrix multiplication ($O(d^2)$) is completely eliminated. Leviathan operates directly on packed ternary weights $W \in \{-1, 0, 1\}$. By utilizing hardware-level sign-manipulation registers, multiplications are stripped down to pure, hardware-level directional additions. This drastically reduces the processor's thermal profile and ALU load.
+- AVX2 x86/x64 path: `_mm256_sign_epi8` based fused bitlinear loop.
+- Portable scalar fallback: same row-packed format for non-AVX2 targets.
+- Packing fix: each weight row is padded independently, so odd hidden sizes no
+  longer corrupt row boundaries.
+- BitNet structure fix: grouped-query attention is handled with separate
+  `num_attention_heads` and `num_key_value_heads`, so K/V projections such as
+  `[640, 2560]` are no longer read as `[2560, 2560]`.
+- BitNet fidelity fix: `attn_sub_norm`, `ffn_sub_norm`, `relu2`, and the model's
+  RoPE theta are applied from the checkpoint configuration.
 
-### 2. Out-of-Core Streaming Quantization
-To compress a 20B/70B model without overloading consumer system memory, Leviathan stream-processes individual tensors sequentially from storage to RAM, compressing weights down to a dense 2-bit representation before flushing the buffer. This ensures a peak RAM footprint of **less than 4GB** during the entire conversion process of any massive model.
+The code is structured so AVX-512 VNNI or ARM NEON SDOT kernels can be added
+behind the same `bitlinear_dispatch` boundary.
 
-### 3. Operating System Bypass via Physical RAM Cloning
-Standard memory mapping (`mmap`) introduces severe operating system page fault deadlocks when multiple threads concurrently slam the storage bus for multi-gigabyte models. Leviathan neutralizes this by forcefully loading and cloning the entire compressed 1.58-bit binary direct into the physical RAM space during initialization, locking the pipeline down to a static 0ms paging latency.
+### 2. Top-K activation sparsity + delta hashing
 
-### 4. Adaptive Cross-Architecture Kernel Matching
-The C++ computing kernel automatically detects the source model's lineage (e.g., GPT-NeoX vs. LLaMA structures) and dynamically swaps the activation functions on-the-fly inside the dense feed-forward network (FFN) loop, seamlessly handling both **GeLU** and **SwiGLU** pathways with zero configuration changes.
+Passing `--top-k K` activates sparse bitlinear inference. For each bitlinear
+input vector, the runtime selects the `K` largest-magnitude INT8 activations and
+only reads the matching ternary columns. A per-layer/projection delta hash tracks
+whether the active index set changed from the previous step.
 
----
+This is the first concrete implementation of the image requirement: reduce the
+effective dense `out_dim * in_dim` work to `out_dim * K` for bitlinear layers.
 
-## 📊 Hardware Exploitation Performance Matrix
+### 3. MatMul-Free MLGRU runtime mode
 
-Tested on: **Intel Core i5-13600KF (6 P-Cores, 8 E-Cores) | 32GB RAM | Win11 Host**
+Passing `--architecture mlgru` replaces the transformer attention map with a
+GRU-like recurrent state update. The mode reuses the ternary projection kernel
+and avoids the `Q @ K.T` attention score matrix.
 
-| Model Scale | Original Format | Compressed Format | VRAM Allocated | Inference Speed (TPS) | Memory Latency |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **GPT-NeoX 20B** | ~40.0 GB (FP16) | **4.83 GB (1.58-bit)** | **0 MB** | **6.36 - 6.42 tokens/sec** | Static 0ms (In-Memory Locked) |
-| **Simulated 120B**| ~240.0 GB (FP16) | **29.1 GB (1.58-bit)**| **0 MB** | **352.17 tokens/sec (Ideal)** | Page Fault Bypassed |
+This path is experimental. Existing transformer checkpoints are not guaranteed
+to produce meaningful text in MLGRU mode. It is intended for MLGRU-compatible
+QAT checkpoints or kernel benchmarking.
 
----
-
-## ⚠️ Semantic Quantization Note (PTQ vs. QAT)
-> **IMPORTANT ARCHITECTURAL DISCLAIMER:** This repository represents an absolute pinnacle of computer systems engineering and hardware exploitation. However, running standard 16-bit pretrained models (`gpt-neox-20b`) through a Post-Training Quantization (PTQ) pipeline down to a radical 1.58-bit representation induces a phenomenon known as **Quantization Collapse**. 
->
-> Because the model's brain was originally trained to calculate context using hyper-precise floating-point gradients, forcefully squeezing those synapses down to just three numbers `{-1, 0, 1}` damages the semantic coherence, resulting in corrupted output text (gibberish/repetitive patterns). 
-> 
-> **Leviathan is built as a future-proof engine architecture.** The core systems, memory pipelines, and SIMD loops are mathematically complete. The moment true **Quantization-Aware Trained (QAT) 20B/70B Native 1.58-bit Weights** are released by open-source research hubs, this engine will immediately awaken as the fastest, most coherent local CPU inference engine in existence.
-
----
-
-## 🛠️ Repository Directory Layout
+## Repository Layout
 
 ```text
 .
-├── quantizer.py          # Out-of-Core Streaming 1.58-bit Weight Compressor
-├── engine.py             # OpenMP-Fused AVX2 Inlined C++ Inference Execution Core
-└── README.md             # Core Documentation and System Architecture Specifications
-
-⚡ Quick Start Guide
-1. Environment Preparation
-Ensure your development environment contains a functional C++ compiler (MSVC on Windows with OpenMP or GCC on Linux) and PyTorch installed.
-
-pip install torch safetensors huggingface_hub transformers
-
-2. Forge the Binary Ammunition (Quantization)
-Run the automated streaming pipeline to download and compress a target 20B model from HuggingFace without exceeding your RAM capacity:
-
-python quantizer.py
-
-This processes the tensors sequentially and dumps extreme_20b_weights.bin and extreme_20b_meta.json directly into your workspace directory.
-
-3. Ignite the Leviathan Core Engine
-Execute the main C++ engine script to initialize the physical memory cloning pipeline and launch the extreme execution shell:
-
-python engine.py
-
+├── quantizer.py   # Streams safetensors into Leviathan v2 binary packages
+├── engine.py      # C++/OpenMP SIMD runtime with dense, Top-K, and MLGRU paths
+└── README.md      # Architecture and usage notes
 ```
 
-📜 License
-Distributed under the MIT License. See LICENSE for more information.
+## Quick Start
 
-🤝 Contributing
-System optimization contributions are welcome. If you can further optimize the AVX2 loop profiles or implement direct AVX-512 vector lanes without triggering memory allocation faults, please submit a Pull Request.
+Install the Python dependencies and make sure a C++ compiler with OpenMP support
+is available. On Windows, PyTorch C++ extensions expect the MSVC toolchain
+(`cl.exe`), usually from Visual Studio Build Tools or a Developer PowerShell.
 
-## ⚠️ Limitations & Known Issues
+```bash
+pip install torch safetensors huggingface_hub transformers ninja
+```
 
-We value transparency in the open-source community. Please be aware of the following structural limitations before evaluating this engine:
+Create a Leviathan package from a native BitNet/QAT checkpoint:
 
-* **Quantization Collapse (PTQ vs. QAT):** This engine is strictly designed for **Native 1.58-bit models** trained via Quantization-Aware Training (QAT), such as `BitNet b1.58`. Applying Post-Training Quantization (PTQ) to standard FP16 models and running them through this engine will result in severe quantization collapse (meaningless text output or immediate EOS). This is a fundamental mathematical limitation of the 1.58-bit architecture, not a bug in the engine codebase.
-* **Theoretical 120B Performance:** The 352 TPS for the 120B model mentioned in the performance table is a **theoretical linear extrapolation** based on the pure compute-bound performance of smaller models. It does *not* account for the Memory Wall (RAM bandwidth bottleneck) encountered in actual local hardware environments. Real-world performance on massive models will be heavily bottlenecked by memory bandwidth.
-* **SIMD Implementation Update:** The initial release utilized OpenMP multi-threading without explicit SIMD vectorization. As of the latest patch, true `_mm256_*` AVX2 Intrinsic instructions have been implemented in the core bit-linear computation kernels to properly claim AVX2 hardware acceleration.
+```bash
+python quantizer.py --model microsoft/bitnet-b1.58-2B-4T-bf16 --out leviathan_native
+```
+
+Run the transformer path:
+
+```bash
+python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json
+```
+
+The default `--prompt-template auto` wraps question-shaped inputs as a completion:
+
+```text
+Question: What is the capital of France?
+Answer:
+```
+
+Use `--prompt-template plain` if you want raw continuation behavior.
+
+Run with Top-K sparse bitlinear:
+
+```bash
+python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 512
+```
+
+Run the experimental MLGRU path:
+
+```bash
+python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --architecture mlgru --top-k 512
+```
+
+## Quantizer Format
+
+`quantizer.py` writes a `leviathan-v2` metadata file.
+
+- Linear projection weights are stored as `ternary_2bit_packed`.
+- Embeddings, lm_head/output heads, norms, biases, and other structural tensors
+  remain FP16 so the engine can load them without semantic corruption.
+- Packed linear tensors include `shape`, `packed_shape`, `gamma`, `offset`, and
+  `size`.
+
+By default, the quantizer refuses non-BitNet model ids because PTQ conversion of
+ordinary FP16 models into 1.58-bit ternary weights usually causes quantization
+collapse. For systems-only experiments, pass `--allow-ptq`.
+
+## Limitations
+
+- Coherent generation requires native 1.58-bit/QAT weights. PTQ of ordinary
+  FP16 models is useful for stress testing the runtime, not for quality.
+- The MLGRU mode is a real runtime path, but it needs compatible trained
+  weights to be a faithful language model.
+- Top-K sparsity trades accuracy for throughput unless the model was trained or
+  calibrated for activation sparsity.
+- AVX-512 VNNI and ARM NEON SDOT are prepared as extension points, not yet
+  fully specialized kernels.
+
+## Garbled Output Checklist
+
+If the engine prints fluent-looking speed stats but nonsense text, check these
+first:
+
+- K/V projection rows must match the model's grouped-query attention shape. For
+  `microsoft/bitnet-b1.58-2B-4T-bf16`, `k_proj` and `v_proj` are 640-wide, not
+  2560-wide.
+- The runtime should report `heads=20, kv_heads=5, kv_dim=640, act=relu2,
+  rope_theta=500000`.
+- Run dense mode first. Add `--top-k` only after dense generation is coherent.
+- Use completion-style prompts for base models. The default `auto` template does
+  this for inputs ending in `?`; the checkpoint is not an instruction-tuned
+  assistant.
+
+## Goal
+
+Leviathan aims to become a minimal, hardware-facing inference engine for
+1.58-bit models: compact binary packaging, CPU-resident weights, SIMD bitlinear
+execution, sparse activation scheduling, and an attention-free recurrent path
+for next-generation matmul-free architectures.
