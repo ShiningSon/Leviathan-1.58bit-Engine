@@ -1,168 +1,322 @@
-import os
-import json
-import time
+from __future__ import annotations
+
 import argparse
+import json
+import os
 import platform
+import time
+from typing import Iterable
+
 import torch
 from torch.utils.cpp_extension import load_inline
-from transformers import AutoTokenizer
+from transformers import AutoConfig, AutoTokenizer
 
 os.environ.setdefault("TORCH_USE_NINJA", "0")
 
+try:
+    import ninja
+
+    ninja_bin_dir = getattr(ninja, "BIN_DIR", "")
+    if ninja_bin_dir and ninja_bin_dir not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = ninja_bin_dir + os.pathsep + os.environ.get("PATH", "")
+except Exception:
+    pass
+
 print("==================================================")
-print("[THE LEVIATHAN] Phase 49: True Architecture (정규화 가중치 복원 및 메모리 최적화)")
+print("[THE LEVIATHAN] Phase 50: sparse SIMD + MLGRU runtime")
 print("==================================================\n")
 
-# ============================================================
-# [1] C++ 엔진룸: 병목 제거 및 LayerNorm 가중치 복원
-# ============================================================
+
 cpp_source = r"""
 #include <torch/extension.h>
+
+#if defined(LEVIATHAN_AVX2)
 #include <immintrin.h>
-#include <omp.h>
-#include <vector>
-#include <cmath>
-#include <iostream>
+#endif
+
+#if defined(LEVIATHAN_NEON_DOT)
+#include <arm_neon.h>
+#endif
+
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <numeric>
+#include <vector>
 
-static const float TERNARY_LUT_F[4] = {0.0f, 1.0f, -1.0f, 0.0f}; 
+static const int8_t TERNARY_LUT_I8[4] = {0, 1, -1, 0};
 
-// [진짜 AVX2 SIMD 가속 커널] 
-// _mm256 인트린직을 사용하여 한 번에 32개의 파라미터를 동시 연산합니다.
-void avx2_bitlinear_intrinsic_fused(const int8_t* x_quant, const uint8_t* packed_w, int in_dim, int out_dim, int32_t* out_accum) {
-    int in_packed_bytes = in_dim / 4;
-    
+struct TopKDeltaState {
+    std::vector<int> indices;
+    uint64_t hash = 0;
+    int delta_count = 0;
+};
+
+static inline int packed_cols_for_dim(int dim) {
+    return (dim + 3) / 4;
+}
+
+static inline int8_t read_packed_weight(const uint8_t* row, int input_idx) {
+    const uint8_t packed = row[input_idx >> 2];
+    const int shift = 6 - ((input_idx & 3) * 2);
+    return TERNARY_LUT_I8[(packed >> shift) & 0x03];
+}
+
+void bitlinear_dense_fused(
+    const int8_t* x_quant,
+    const uint8_t* packed_w,
+    int in_dim,
+    int out_dim,
+    int32_t* out_accum
+) {
+    const int row_packed_bytes = packed_cols_for_dim(in_dim);
+
     #pragma omp parallel for schedule(dynamic, 8)
     for (int o = 0; o < out_dim; ++o) {
-        const uint8_t* w_row = packed_w + (o * in_packed_bytes);
-        
-        __m256i vec_sum = _mm256_setzero_si256(); // 256비트 누산기 초기화
+        const uint8_t* w_row = packed_w + (o * row_packed_bytes);
         int32_t scalar_sum = 0;
         int i = 0;
-        
-        // AVX2 SIMD 파이프라인: 8바이트(32개의 1.58비트 가중치)씩 한 번에 처리
-        for (; i <= in_packed_bytes - 8; i += 8) {
-            // 1. 압축된 2비트 가중치 32개를 int8_t 배열로 L1 캐시에 언패킹
+
+#if defined(LEVIATHAN_AVX2)
+        __m256i vec_sum = _mm256_setzero_si256();
+        for (; i <= in_dim - 32; i += 32) {
             int8_t unpacked_w[32];
+            const int byte_base = i >> 2;
             for (int j = 0; j < 8; ++j) {
-                uint8_t p = w_row[i + j];
-                unpacked_w[j*4 + 0] = (int8_t)TERNARY_LUT_F[(p >> 6) & 0x03];
-                unpacked_w[j*4 + 1] = (int8_t)TERNARY_LUT_F[(p >> 4) & 0x03];
-                unpacked_w[j*4 + 2] = (int8_t)TERNARY_LUT_F[(p >> 2) & 0x03];
-                unpacked_w[j*4 + 3] = (int8_t)TERNARY_LUT_F[p & 0x03];
+                const uint8_t p = w_row[byte_base + j];
+                unpacked_w[j * 4 + 0] = TERNARY_LUT_I8[(p >> 6) & 0x03];
+                unpacked_w[j * 4 + 1] = TERNARY_LUT_I8[(p >> 4) & 0x03];
+                unpacked_w[j * 4 + 2] = TERNARY_LUT_I8[(p >> 2) & 0x03];
+                unpacked_w[j * 4 + 3] = TERNARY_LUT_I8[p & 0x03];
             }
-            
-            // 2. AVX2 메모리 로드 (32바이트)
-            __m256i vx = _mm256_loadu_si256((const __m256i*)&x_quant[i * 4]);
-            __m256i vw = _mm256_loadu_si256((const __m256i*)unpacked_w);
-            
-            // 3. 3항 곱셈 마법 (vw가 -1이면 vx부호 반전, 0이면 0, 1이면 vx 유지)
-            __m256i v_prod = _mm256_sign_epi8(vx, vw);
-            
-            // 4. 오버플로우 방지를 위한 16비트 확장 및 수평 덧셈(Horizontal Add)
-            __m128i v_prod_lo = _mm256_castsi256_si128(v_prod);
-            __m128i v_prod_hi = _mm256_extracti128_si256(v_prod, 1);
-            
-            __m256i v_16_lo = _mm256_cvtepi8_epi16(v_prod_lo);
-            __m256i v_16_hi = _mm256_cvtepi8_epi16(v_prod_hi);
-            
-            __m256i ones = _mm256_set1_epi16(1);
-            __m256i sum32_lo = _mm256_madd_epi16(v_16_lo, ones);
-            __m256i sum32_hi = _mm256_madd_epi16(v_16_hi, ones);
-            
-            // 5. 32비트 누산기에 최종 합산
-            vec_sum = _mm256_add_epi32(vec_sum, sum32_lo);
-            vec_sum = _mm256_add_epi32(vec_sum, sum32_hi);
+
+            const __m256i vx = _mm256_loadu_si256((const __m256i*)&x_quant[i]);
+            const __m256i vw = _mm256_loadu_si256((const __m256i*)unpacked_w);
+            const __m256i v_prod = _mm256_sign_epi8(vx, vw);
+
+            const __m128i v_prod_lo = _mm256_castsi256_si128(v_prod);
+            const __m128i v_prod_hi = _mm256_extracti128_si256(v_prod, 1);
+            const __m256i v_16_lo = _mm256_cvtepi8_epi16(v_prod_lo);
+            const __m256i v_16_hi = _mm256_cvtepi8_epi16(v_prod_hi);
+            const __m256i ones = _mm256_set1_epi16(1);
+            vec_sum = _mm256_add_epi32(vec_sum, _mm256_madd_epi16(v_16_lo, ones));
+            vec_sum = _mm256_add_epi32(vec_sum, _mm256_madd_epi16(v_16_hi, ones));
         }
-        
-        // 256비트 벡터 레지스터에 쌓인 값을 스칼라로 추출
-        int32_t sums[8];
-        _mm256_storeu_si256((__m256i*)sums, vec_sum);
-        for(int k = 0; k < 8; ++k) scalar_sum += sums[k];
-        
-        // SIMD로 처리하고 남은 자투리(Tail) 처리
-        for (; i < in_packed_bytes; ++i) {
-            uint8_t p = w_row[i];
-            int base_x = i * 4;
-            scalar_sum += x_quant[base_x + 0] * (int8_t)TERNARY_LUT_F[(p >> 6) & 0x03];
-            scalar_sum += x_quant[base_x + 1] * (int8_t)TERNARY_LUT_F[(p >> 4) & 0x03];
-            scalar_sum += x_quant[base_x + 2] * (int8_t)TERNARY_LUT_F[(p >> 2) & 0x03];
-            scalar_sum += x_quant[base_x + 3] * (int8_t)TERNARY_LUT_F[p & 0x03];
+
+        alignas(32) int32_t sums[8];
+        _mm256_store_si256((__m256i*)sums, vec_sum);
+        for (int k = 0; k < 8; ++k) scalar_sum += sums[k];
+#endif
+
+        for (; i < in_dim; ++i) {
+            scalar_sum += static_cast<int32_t>(x_quant[i]) * read_packed_weight(w_row, i);
         }
         out_accum[o] = scalar_sum;
     }
 }
 
+uint64_t hash_indices(const std::vector<int>& indices) {
+    uint64_t h = 1469598103934665603ULL;
+    for (int idx : indices) {
+        h ^= static_cast<uint64_t>(idx + 0x9e3779b9);
+        h *= 1099511628211ULL;
+    }
+    return h;
+}
+
+int symmetric_delta_count(const std::vector<int>& a, const std::vector<int>& b) {
+    int i = 0;
+    int j = 0;
+    int delta = 0;
+    while (i < static_cast<int>(a.size()) && j < static_cast<int>(b.size())) {
+        if (a[i] == b[j]) {
+            ++i;
+            ++j;
+        } else if (a[i] < b[j]) {
+            ++delta;
+            ++i;
+        } else {
+            ++delta;
+            ++j;
+        }
+    }
+    return delta + (static_cast<int>(a.size()) - i) + (static_cast<int>(b.size()) - j);
+}
+
+void select_topk_abs(const int8_t* x_quant, int dim, int top_k, std::vector<int>& out) {
+    top_k = std::max(0, std::min(top_k, dim));
+    out.resize(dim);
+    std::iota(out.begin(), out.end(), 0);
+    if (top_k < dim) {
+        std::nth_element(
+            out.begin(),
+            out.begin() + top_k,
+            out.end(),
+            [x_quant](int lhs, int rhs) {
+                return std::abs(static_cast<int>(x_quant[lhs])) > std::abs(static_cast<int>(x_quant[rhs]));
+            }
+        );
+        out.resize(top_k);
+    }
+    std::sort(out.begin(), out.end());
+}
+
+const std::vector<int>& update_topk_delta_state(
+    TopKDeltaState& state,
+    const int8_t* x_quant,
+    int dim,
+    int top_k
+) {
+    std::vector<int> next_indices;
+    select_topk_abs(x_quant, dim, top_k, next_indices);
+    const uint64_t next_hash = hash_indices(next_indices);
+    if (state.indices.empty() || next_hash != state.hash) {
+        state.delta_count = symmetric_delta_count(state.indices, next_indices);
+        state.indices.swap(next_indices);
+        state.hash = next_hash;
+    } else {
+        state.delta_count = 0;
+    }
+    return state.indices;
+}
+
+void bitlinear_topk_sparse(
+    const int8_t* x_quant,
+    const uint8_t* packed_w,
+    int in_dim,
+    int out_dim,
+    const std::vector<int>& active_indices,
+    int32_t* out_accum
+) {
+    const int row_packed_bytes = packed_cols_for_dim(in_dim);
+    // Magnitude-based Top-K drops only the smallest activations, whose signed
+    // contributions roughly cancel, so the partial sum already tracks the dense
+    // sum. Do NOT rescale by in_dim/K -- that amplifies the sum and corrupts
+    // downstream distributions (verified: produces gibberish output).
+    #pragma omp parallel for schedule(dynamic, 8)
+    for (int o = 0; o < out_dim; ++o) {
+        const uint8_t* w_row = packed_w + (o * row_packed_bytes);
+        int32_t sum = 0;
+        for (int idx : active_indices) {
+            sum += static_cast<int32_t>(x_quant[idx]) * read_packed_weight(w_row, idx);
+        }
+        out_accum[o] = sum;
+    }
+}
+
+void bitlinear_dispatch(
+    const int8_t* x_quant,
+    const uint8_t* packed_w,
+    int in_dim,
+    int out_dim,
+    int32_t* out_accum,
+    int top_k,
+    TopKDeltaState* topk_state
+) {
+    if (top_k > 0 && top_k < in_dim && topk_state != nullptr) {
+        const std::vector<int>& active_indices = update_topk_delta_state(*topk_state, x_quant, in_dim, top_k);
+        bitlinear_topk_sparse(x_quant, packed_w, in_dim, out_dim, active_indices, out_accum);
+    } else {
+        bitlinear_dense_fused(x_quant, packed_w, in_dim, out_dim, out_accum);
+    }
+}
+
 void quantize_absmax(int8_t* out_quant, float& out_scale, const float* in, int dim) {
     float max_abs = 1e-8f;
-    for (int i = 0; i < dim; ++i) { float v = std::abs(in[i]); if (v > max_abs) max_abs = v; }
+    for (int i = 0; i < dim; ++i) {
+        const float v = std::abs(in[i]);
+        if (v > max_abs) max_abs = v;
+    }
     out_scale = 127.0f / max_abs;
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < dim; ++i) {
-        float q = std::round(in[i] * out_scale);
+        const float q = std::round(in[i] * out_scale);
         out_quant[i] = static_cast<int8_t>(std::max(-128.0f, std::min(127.0f, q)));
     }
 }
 
 void dequantize(float* out, const int32_t* in, float scale_x, float gamma, int dim) {
-    float factor = gamma / scale_x;
+    const float factor = gamma / std::max(scale_x, 1e-8f);
     #pragma omp parallel for schedule(static)
-    for(int i = 0; i < dim; ++i) out[i] = in[i] * factor;
+    for (int i = 0; i < dim; ++i) out[i] = in[i] * factor;
 }
 
-// [핵심 패치 1] 모델이 학습한 FP16 가중치(weight)를 반영하는 정규화 함수
 void rms_norm_weighted(float* out, const float* in, const float* weight, int dim, float eps = 1e-5f) {
     float ss = 0.0f;
-    for(int i = 0; i < dim; ++i) ss += in[i] * in[i];
-    ss = 1.0f / std::sqrt((ss / dim) + eps);
+    for (int i = 0; i < dim; ++i) ss += in[i] * in[i];
+    const float inv = 1.0f / std::sqrt((ss / dim) + eps);
     #pragma omp parallel for schedule(static)
-    for(int i = 0; i < dim; ++i) out[i] = in[i] * ss * weight[i];
+    for (int i = 0; i < dim; ++i) out[i] = in[i] * inv * weight[i];
 }
 
 void apply_rope(float* vec, int seq_pos, int dim, int num_heads, float rope_theta = 10000.0f) {
-    int head_dim = dim / num_heads;
+    const int head_dim = dim / num_heads;
     #pragma omp parallel for schedule(static)
     for (int h = 0; h < num_heads; ++h) {
         float* head_vec = vec + (h * head_dim);
-        for (int i = 0; i < head_dim; i += 2) {
-            float freq = 1.0f / std::pow(rope_theta, static_cast<float>(i) / head_dim);
-            float val = static_cast<float>(seq_pos) * freq;
-            float cos_val = std::cos(val), sin_val = std::sin(val);
-            float v0 = head_vec[i], v1 = head_vec[i + 1];
-            head_vec[i]   = v0 * cos_val - v1 * sin_val;
-            head_vec[i+1] = v0 * sin_val + v1 * cos_val;
+        for (int i = 0; i + 1 < head_dim; i += 2) {
+            const float freq = 1.0f / std::pow(rope_theta, static_cast<float>(i) / head_dim);
+            const float val = static_cast<float>(seq_pos) * freq;
+            const float cos_val = std::cos(val);
+            const float sin_val = std::sin(val);
+            const float v0 = head_vec[i];
+            const float v1 = head_vec[i + 1];
+            head_vec[i] = v0 * cos_val - v1 * sin_val;
+            head_vec[i + 1] = v0 * sin_val + v1 * cos_val;
         }
     }
 }
 
-void attention_forward_omp(float* attn_out, const float* q, float* k_cache, float* v_cache, int current_pos, int num_heads, int head_dim) {
-    float scale = 1.0f / std::sqrt(static_cast<float>(head_dim));
+void attention_forward_omp(
+    float* attn_out,
+    const float* q,
+    float* k_cache,
+    float* v_cache,
+    int current_pos,
+    int num_heads,
+    int num_kv_heads,
+    int head_dim
+) {
+    const float scale = 1.0f / std::sqrt(static_cast<float>(head_dim));
+    const int kv_groups = std::max(1, num_heads / std::max(1, num_kv_heads));
     #pragma omp parallel for schedule(dynamic, 4)
     for (int h = 0; h < num_heads; ++h) {
+        const int kv_head = std::min(num_kv_heads - 1, h / kv_groups);
         const float* q_head = q + (h * head_dim);
         float* out_head = attn_out + (h * head_dim);
         std::vector<float> scores(current_pos + 1, 0.0f);
         float max_score = -1e9f;
         for (int t = 0; t <= current_pos; ++t) {
-            const float* k_head = k_cache + (t * num_heads * head_dim) + (h * head_dim);
+            const float* k_head = k_cache + (t * num_kv_heads * head_dim) + (kv_head * head_dim);
             float score = 0.0f;
             for (int i = 0; i < head_dim; ++i) score += q_head[i] * k_head[i];
             score *= scale;
             scores[t] = score;
             if (score > max_score) max_score = score;
         }
+
         float sum_exp = 0.0f;
         for (int t = 0; t <= current_pos; ++t) {
             scores[t] = std::exp(scores[t] - max_score);
             sum_exp += scores[t];
         }
+
         std::fill(out_head, out_head + head_dim, 0.0f);
         for (int t = 0; t <= current_pos; ++t) {
-            float s = scores[t] / sum_exp;
-            const float* v_head = v_cache + (t * num_heads * head_dim) + (h * head_dim);
+            const float s = scores[t] / std::max(sum_exp, 1e-8f);
+            const float* v_head = v_cache + (t * num_kv_heads * head_dim) + (kv_head * head_dim);
             for (int i = 0; i < head_dim; ++i) out_head[i] += s * v_head[i];
         }
     }
+}
+
+static inline float sigmoid_stable(float x) {
+    if (x >= 0.0f) {
+        const float z = std::exp(-x);
+        return 1.0f / (1.0f + z);
+    }
+    const float z = std::exp(x);
+    return z / (1.0f + z);
 }
 
 void unpack_embedding_fp32(int token_id, const float* embed_w, float* out_hidden, int hidden_dim) {
@@ -170,290 +324,594 @@ void unpack_embedding_fp32(int token_id, const float* embed_w, float* out_hidden
     std::copy(row_ptr, row_ptr + hidden_dim, out_hidden);
 }
 
-int64_t lm_head_argmax_fp32(const float* hidden, const float* lm_head_w, int vocab_size, int hidden_dim, const std::vector<int64_t>& past_tokens) {
+int64_t lm_head_argmax_fp32(
+    const float* hidden,
+    const float* lm_head_w,
+    int vocab_size,
+    int hidden_dim,
+    const std::vector<int64_t>& past_tokens
+) {
     std::vector<float> logits(vocab_size, 0.0f);
     #pragma omp parallel for schedule(dynamic, 1024)
-    for(int v = 0; v < vocab_size; ++v) {
+    for (int v = 0; v < vocab_size; ++v) {
         const float* row_ptr = lm_head_w + (v * hidden_dim);
         float score = 0.0f;
-        for(int i = 0; i < hidden_dim; ++i) {
-            score += hidden[i] * row_ptr[i];
-        }
+        for (int i = 0; i < hidden_dim; ++i) score += hidden[i] * row_ptr[i];
         logits[v] = score;
     }
-    float penalty = 1.2f;
-    for(int64_t pt : past_tokens) {
-        if(logits[pt] > 0) logits[pt] /= penalty;
-        else logits[pt] *= penalty;
+
+    const float penalty = 1.2f;
+    for (int64_t pt : past_tokens) {
+        if (pt >= 0 && pt < vocab_size) {
+            if (logits[pt] > 0) logits[pt] /= penalty;
+            else logits[pt] *= penalty;
+        }
     }
+
     int64_t best_id = 0;
     float best_val = -1e9f;
-    for(int v = 0; v < vocab_size; ++v) {
-        if(logits[v] > best_val) { best_val = logits[v]; best_id = v; }
+    for (int v = 0; v < vocab_size; ++v) {
+        if (logits[v] > best_val) {
+            best_val = logits[v];
+            best_id = v;
+        }
     }
     return best_id;
 }
 
 std::vector<int64_t> force_evolved_generate_cpp(
-    std::vector<int64_t> prompt_tokens, int64_t max_new_tokens, int64_t hidden_dim,
-    int64_t num_layers, int64_t num_heads, int64_t vocab_size, int64_t eos_id,
-    std::vector<torch::Tensor> layer_weights, std::vector<float> layer_gammas,
-    std::vector<torch::Tensor> layer_norms, torch::Tensor final_norm_tensor,
-    torch::Tensor embed_tensor, torch::Tensor lm_head_tensor 
+    std::vector<int64_t> prompt_tokens,
+    int64_t max_new_tokens,
+    int64_t hidden_dim_i64,
+    int64_t inter_dim_i64,
+    int64_t kv_dim_i64,
+    int64_t num_layers_i64,
+    int64_t num_heads_i64,
+    int64_t num_kv_heads_i64,
+    int64_t vocab_size_i64,
+    int64_t eos_id,
+    std::vector<int64_t> stop_token_ids,
+    int64_t top_k_i64,
+    int64_t architecture_mode,
+    int64_t activation_mode,
+    double rope_theta,
+    std::vector<torch::Tensor> layer_weights,
+    std::vector<float> layer_gammas,
+    std::vector<torch::Tensor> layer_norms,
+    torch::Tensor final_norm_tensor,
+    torch::Tensor embed_tensor,
+    torch::Tensor lm_head_tensor
 ) {
     std::vector<int64_t> generated = prompt_tokens;
-    
+
+    const int hidden_dim = static_cast<int>(hidden_dim_i64);
+    const int inter_dim = static_cast<int>(inter_dim_i64);
+    const int kv_dim = static_cast<int>(kv_dim_i64);
+    const int num_layers = static_cast<int>(num_layers_i64);
+    const int num_heads = static_cast<int>(num_heads_i64);
+    const int num_kv_heads = static_cast<int>(num_kv_heads_i64);
+    const int vocab_size = static_cast<int>(vocab_size_i64);
+    const int top_k = static_cast<int>(std::max<int64_t>(0, top_k_i64));
+    const bool use_mlgru = architecture_mode == 1;
+    const bool use_relu2 = activation_mode == 1;
+
     const float* embed_ptr = embed_tensor.data_ptr<float>();
     const float* lm_head_ptr = lm_head_tensor.data_ptr<float>();
     const float* final_norm_w = final_norm_tensor.data_ptr<float>();
-    
-    int max_seq_len = prompt_tokens.size() + max_new_tokens;
-    int head_dim = hidden_dim / num_heads;
-    
-    // [핵심 패치 2] 지연 시간(84초)을 박살내는 메모리 사전 할당 (Pre-allocation)
-    // 루프 내부에서 발생하던 수만 번의 동적 할당을 외부로 완전히 빼냈습니다.
-    int inter_dim = layer_weights[4].numel() * 4 / hidden_dim;
-    if (inter_dim <= 0) inter_dim = hidden_dim * 4; 
-    
-    std::vector<float> k_cache(num_layers * max_seq_len * hidden_dim, 0.0f);
-    std::vector<float> v_cache(num_layers * max_seq_len * hidden_dim, 0.0f);
-    std::vector<float> hidden_state(hidden_dim, 0.0f), norm_state(hidden_dim, 0.0f);
-    std::vector<int8_t> hidden_q(hidden_dim, 0);
-    std::vector<int32_t> accum_buf(hidden_dim * 4, 0); 
-    std::vector<float> q(hidden_dim, 0.0f), k(hidden_dim, 0.0f), v(hidden_dim, 0.0f), attn_out(hidden_dim, 0.0f);
+
+    const int max_seq_len = static_cast<int>(prompt_tokens.size() + max_new_tokens);
+    const int head_dim = std::max(1, hidden_dim / std::max(1, num_heads));
+    const int accum_dim = std::max(std::max(hidden_dim, inter_dim), kv_dim);
+
+    std::vector<float> k_cache(num_layers * max_seq_len * kv_dim, 0.0f);
+    std::vector<float> v_cache(num_layers * max_seq_len * kv_dim, 0.0f);
+    std::vector<float> mlgru_state(num_layers * hidden_dim, 0.0f);
+    std::vector<TopKDeltaState> topk_states(num_layers * 7);
+
+    std::vector<float> hidden_state(hidden_dim, 0.0f);
+    std::vector<float> norm_state(hidden_dim, 0.0f);
+    std::vector<int8_t> hidden_q(std::max(hidden_dim, inter_dim), 0);
+    std::vector<int32_t> accum_buf(accum_dim, 0);
+    std::vector<float> q(hidden_dim, 0.0f);
+    std::vector<float> k(kv_dim, 0.0f);
+    std::vector<float> v(kv_dim, 0.0f);
+    std::vector<float> attn_out(hidden_dim, 0.0f);
+    std::vector<float> attn_normed(hidden_dim, 0.0f);
     std::vector<float> ffn_norm_state(hidden_dim, 0.0f);
-    std::vector<float> gate_out(inter_dim, 0.0f), up_out(inter_dim, 0.0f), ffn_act(inter_dim, 0.0f);
-    std::vector<int8_t> ffn_act_q(inter_dim, 0);
-    
-    int total_steps = prompt_tokens.size() + max_new_tokens - 1;
+    std::vector<float> gate_out(inter_dim, 0.0f);
+    std::vector<float> up_out(inter_dim, 0.0f);
+    std::vector<float> ffn_act(inter_dim, 0.0f);
+    std::vector<float> ffn_sub_normed(inter_dim, 0.0f);
+
+    auto state_slot = [&](int layer, int projection) -> TopKDeltaState* {
+        if (top_k <= 0) return nullptr;
+        return &topk_states[layer * 7 + projection];
+    };
+
+    const int total_steps = static_cast<int>(prompt_tokens.size() + max_new_tokens - 1);
     for (int step = 0; step < total_steps; ++step) {
-        int current_pos = step;
-        int current_token = (step < prompt_tokens.size()) ? prompt_tokens[step] : generated.back();
-        
+        const int current_pos = step;
+        const int current_token = (step < static_cast<int>(prompt_tokens.size()))
+            ? static_cast<int>(prompt_tokens[step])
+            : static_cast<int>(generated.back());
+
         unpack_embedding_fp32(current_token, embed_ptr, hidden_state.data(), hidden_dim);
-        
+
         for (int l = 0; l < num_layers; ++l) {
-            int w_idx = l * 7;
-            if (layer_weights[w_idx+0].numel() == 0) continue; 
+            const int w_idx = l * 7;
+            if (w_idx + 6 >= static_cast<int>(layer_weights.size()) || layer_weights[w_idx + 0].numel() == 0) {
+                continue;
+            }
 
-            // 레이어별 고유 정규화 가중치 매핑
-            const float* attn_norm_w = layer_norms[l * 2].data_ptr<float>();
-            const float* ffn_norm_w = layer_norms[l * 2 + 1].data_ptr<float>();
+            const float* attn_norm_w = layer_norms[l * 4].data_ptr<float>();
+            const float* ffn_norm_w = layer_norms[l * 4 + 1].data_ptr<float>();
+            const float* attn_sub_norm_w = layer_norms[l * 4 + 2].data_ptr<float>();
+            const float* ffn_sub_norm_w = layer_norms[l * 4 + 3].data_ptr<float>();
 
-            // 가중치가 반영된 정확한 정규화 수행
             rms_norm_weighted(norm_state.data(), hidden_state.data(), attn_norm_w, hidden_dim);
-            
-            float scale_x;
+
+            float scale_x = 1.0f;
             quantize_absmax(hidden_q.data(), scale_x, norm_state.data(), hidden_dim);
-            
-            avx2_bitlinear_intrinsic_fused(hidden_q.data(), layer_weights[w_idx+0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data());
-            dequantize(q.data(), accum_buf.data(), scale_x, layer_gammas[w_idx+0], hidden_dim);
-            
-            avx2_bitlinear_intrinsic_fused(hidden_q.data(), layer_weights[w_idx+1].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data());
-            dequantize(k.data(), accum_buf.data(), scale_x, layer_gammas[w_idx+1], hidden_dim);
-            
-            avx2_bitlinear_intrinsic_fused(hidden_q.data(), layer_weights[w_idx+2].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data());
-            dequantize(v.data(), accum_buf.data(), scale_x, layer_gammas[w_idx+2], hidden_dim);
-            
-            apply_rope(q.data(), current_pos, hidden_dim, num_heads);
-            apply_rope(k.data(), current_pos, hidden_dim, num_heads);
-            
-            int cache_offset = (l * max_seq_len * hidden_dim) + (current_pos * hidden_dim);
-            std::copy(k.begin(), k.end(), k_cache.begin() + cache_offset);
-            std::copy(v.begin(), v.end(), v_cache.begin() + cache_offset);
-            
-            attention_forward_omp(attn_out.data(), q.data(), k_cache.data() + (l * max_seq_len * hidden_dim), v_cache.data() + (l * max_seq_len * hidden_dim), current_pos, num_heads, head_dim);
-            
-            float scale_attn;
-            quantize_absmax(hidden_q.data(), scale_attn, attn_out.data(), hidden_dim);
-            avx2_bitlinear_intrinsic_fused(hidden_q.data(), layer_weights[w_idx+3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data());
-            
-            float factor = layer_gammas[w_idx+3] / scale_attn;
+
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, state_slot(l, 0));
+            dequantize(q.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 0], hidden_dim);
+
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, state_slot(l, 1));
+            dequantize(k.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 1], kv_dim);
+
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, state_slot(l, 2));
+            dequantize(v.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 2], kv_dim);
+
+            if (use_mlgru) {
+                float* recurrent = mlgru_state.data() + (l * hidden_dim);
+                #pragma omp parallel for schedule(static)
+                for (int i = 0; i < hidden_dim; ++i) {
+                    const float reset = sigmoid_stable(q[i]);
+                    const int kv_i = i % kv_dim;
+                    const float update = sigmoid_stable(k[kv_i]);
+                    const float candidate = std::tanh(v[kv_i]) * reset;
+                    recurrent[i] = update * recurrent[i] + (1.0f - update) * candidate;
+                    attn_out[i] = recurrent[i];
+                }
+            } else {
+                apply_rope(q.data(), current_pos, hidden_dim, num_heads, static_cast<float>(rope_theta));
+                apply_rope(k.data(), current_pos, kv_dim, num_kv_heads, static_cast<float>(rope_theta));
+
+                const int cache_offset = (l * max_seq_len * kv_dim) + (current_pos * kv_dim);
+                std::copy(k.begin(), k.end(), k_cache.begin() + cache_offset);
+                std::copy(v.begin(), v.end(), v_cache.begin() + cache_offset);
+
+                attention_forward_omp(
+                    attn_out.data(),
+                    q.data(),
+                    k_cache.data() + (l * max_seq_len * kv_dim),
+                    v_cache.data() + (l * max_seq_len * kv_dim),
+                    current_pos,
+                    num_heads,
+                    num_kv_heads,
+                    head_dim
+                );
+            }
+
+            float scale_attn = 1.0f;
+            rms_norm_weighted(attn_normed.data(), attn_out.data(), attn_sub_norm_w, hidden_dim);
+            quantize_absmax(hidden_q.data(), scale_attn, attn_normed.data(), hidden_dim);
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, state_slot(l, 3));
+
+            const float attn_factor = layer_gammas[w_idx + 3] / std::max(scale_attn, 1e-8f);
             #pragma omp parallel for schedule(static)
-            for(int i=0; i<hidden_dim; ++i) hidden_state[i] += accum_buf[i] * factor;
-            
-            // FFN 정규화 가중치 적용
+            for (int i = 0; i < hidden_dim; ++i) hidden_state[i] += accum_buf[i] * attn_factor;
+
             rms_norm_weighted(ffn_norm_state.data(), hidden_state.data(), ffn_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_x, ffn_norm_state.data(), hidden_dim);
-            
-            avx2_bitlinear_intrinsic_fused(hidden_q.data(), layer_weights[w_idx+4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data());
-            dequantize(gate_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx+4], inter_dim);
-            
-            bool has_up_proj = (layer_weights[w_idx+5].numel() > 0);
+
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, state_slot(l, 4));
+            dequantize(gate_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 4], inter_dim);
+
+            const bool has_up_proj = layer_weights[w_idx + 5].numel() > 0;
             if (has_up_proj) {
-                avx2_bitlinear_intrinsic_fused(hidden_q.data(), layer_weights[w_idx+5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data());
-                dequantize(up_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx+5], inter_dim);
+                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, state_slot(l, 5));
+                dequantize(up_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 5], inter_dim);
             }
-            
+
             #pragma omp parallel for schedule(static)
-            for(int i=0; i<inter_dim; ++i) {
-                float g = gate_out[i];
+            for (int i = 0; i < inter_dim; ++i) {
+                const float g = gate_out[i];
                 if (has_up_proj) {
-                    float silu = g / (1.0f + std::exp(-g));
-                    ffn_act[i] = silu * up_out[i];
+                    if (use_relu2) {
+                        const float relu = std::max(0.0f, g);
+                        ffn_act[i] = relu * relu * up_out[i];
+                    } else {
+                        const float silu = g / (1.0f + std::exp(-g));
+                        ffn_act[i] = silu * up_out[i];
+                    }
                 } else {
-                    float cdf = 0.5f * (1.0f + std::tanh(0.79788456f * (g + 0.044715f * g * g * g)));
+                    const float cdf = 0.5f * (1.0f + std::tanh(0.79788456f * (g + 0.044715f * g * g * g)));
                     ffn_act[i] = g * cdf;
                 }
             }
-            
-            float scale_ffn;
-            quantize_absmax(ffn_act_q.data(), scale_ffn, ffn_act.data(), inter_dim);
-            
-            avx2_bitlinear_intrinsic_fused(ffn_act_q.data(), layer_weights[w_idx+6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data());
-            
-            float down_factor = layer_gammas[w_idx+6] / scale_ffn;
+
+            float scale_ffn = 1.0f;
+            rms_norm_weighted(ffn_sub_normed.data(), ffn_act.data(), ffn_sub_norm_w, inter_dim);
+            quantize_absmax(hidden_q.data(), scale_ffn, ffn_sub_normed.data(), inter_dim);
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, state_slot(l, 6));
+
+            const float down_factor = layer_gammas[w_idx + 6] / std::max(scale_ffn, 1e-8f);
             #pragma omp parallel for schedule(static)
-            for(int i=0; i<hidden_dim; ++i) hidden_state[i] += accum_buf[i] * down_factor;
+            for (int i = 0; i < hidden_dim; ++i) hidden_state[i] += accum_buf[i] * down_factor;
         }
 
-        // 최종 출력 전 정규화 가중치 적용
         rms_norm_weighted(norm_state.data(), hidden_state.data(), final_norm_w, hidden_dim);
-        
-        if (step >= prompt_tokens.size() - 1) {
-            int64_t next_token = lm_head_argmax_fp32(norm_state.data(), lm_head_ptr, vocab_size, hidden_dim, generated);
+
+        if (step >= static_cast<int>(prompt_tokens.size()) - 1) {
+            const int64_t next_token = lm_head_argmax_fp32(norm_state.data(), lm_head_ptr, vocab_size, hidden_dim, generated);
             generated.push_back(next_token);
             if (next_token == eos_id || next_token == 0 || next_token == 2 || next_token == 128001) break;
+            // Base completion models keep generating past the answer (e.g. extra
+            // "Question:" lines). For Q&A prompts, the model emits a newline at
+            // the end of its answer, so stopping there yields a clean reply.
+            if (!stop_token_ids.empty()) {
+                for (int64_t stop_id : stop_token_ids) {
+                    if (next_token == stop_id) goto generation_done;
+                }
+            }
         }
     }
-    
+
+    generation_done:;
+
     return generated;
 }
 """
 
-if platform.system().lower().startswith("win"):
-    extra_cflags = ["/O2", "/arch:AVX2", "/fp:fast", "/openmp"]
-else:
-    extra_cflags = ["-O3", "-march=native", "-ffast-math", "-fopenmp"]
 
-print("[BUILD] 구조적 결함 제거 및 런타임 최적화 커널 컴파일 중...")
-evolved_engine = load_inline(
-    name="phase49_master",
-    cpp_sources=[cpp_source],
-    functions=["force_evolved_generate_cpp"],
-    extra_cflags=extra_cflags,
-    verbose=False,
-)
-print("[BUILD] 컴파일 완료!\n")
+def _extension_flags() -> list[str]:
+    machine = platform.machine().lower()
+    system = platform.system().lower()
+    if machine in {"amd64", "x86_64", "x64"}:
+        if system.startswith("win"):
+            return ["/O2", "/arch:AVX2", "/fp:fast", "/openmp", "/DLEVIATHAN_AVX2"]
+        return ["-O3", "-march=native", "-ffast-math", "-fopenmp", "-DLEVIATHAN_AVX2"]
+    if "arm" in machine or "aarch64" in machine:
+        if system.startswith("darwin"):
+            return ["-O3", "-ffast-math"]
+        return ["-O3", "-ffast-math", "-fopenmp", "-DLEVIATHAN_NEON_DOT"]
+    return ["/O2", "/openmp"] if system.startswith("win") else ["-O3", "-fopenmp"]
 
 
-# ============================================================
-# [2] 파이썬 로더
-# ============================================================
+_evolved_engine = None
+
+
+def get_runtime():
+    global _evolved_engine
+    if _evolved_engine is not None:
+        return _evolved_engine
+
+    print("[BUILD] Compiling Leviathan sparse SIMD runtime...")
+    try:
+        _evolved_engine = load_inline(
+            name="leviathan_phase52_topk_rescale",
+            cpp_sources=[cpp_source],
+            functions=["force_evolved_generate_cpp"],
+            extra_cflags=_extension_flags(),
+            verbose=False,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "Leviathan needs Ninja plus a PyTorch-compatible C++ compiler. "
+            "On Windows, install Visual Studio Build Tools with the MSVC C++ toolchain "
+            "or run from a Developer PowerShell where cl.exe is available."
+        ) from exc
+    print("[BUILD] Compile complete.\n")
+    return _evolved_engine
+
+
+def _lower_keys(meta: dict) -> Iterable[tuple[str, str]]:
+    for key in meta["tensors"].keys():
+        yield key, key.lower()
+
+
+def _layer_number_from_key(key: str) -> int | None:
+    parts = key.split(".")
+    for marker in ("layers", "h", "block", "blocks"):
+        if marker in parts:
+            idx = parts.index(marker) + 1
+            if idx < len(parts) and parts[idx].isdigit():
+                return int(parts[idx])
+    return None
+
+
 class RestoredBitNet:
-    def __init__(self, bin_path="leviathan_native_10b.bin", meta_path="leviathan_native_10b_meta.json"):
-        with open(meta_path, "r") as f: self.meta = json.load(f)
-        target_model = self.meta.get("model_name", "1bitLLM/bitnet_b1_58-3B")
+    def __init__(
+        self,
+        bin_path: str = "leviathan_native.bin",
+        meta_path: str = "leviathan_native_meta.json",
+        architecture: str = "transformer",
+        top_k: int = 0,
+        prompt_template: str = "auto",
+    ):
+        with open(meta_path, "r", encoding="utf-8") as f:
+            self.meta = json.load(f)
+
+        self.architecture = architecture
+        self.architecture_mode = 1 if architecture == "mlgru" else 0
+        self.top_k = max(0, int(top_k))
+        self.prompt_template = prompt_template
+
+        target_model = self.meta.get("model_name", "microsoft/bitnet-b1.58-2B-4T-bf16")
+        try:
+            self.config = AutoConfig.from_pretrained(target_model)
+        except Exception:
+            self.config = None
+        self.meta_config = self.meta.get("model_config", {})
         self.tokenizer = AutoTokenizer.from_pretrained(target_model)
-        
-        embed_keys = [k for k in self.meta["tensors"].keys() if "embed" in k or "wte" in k]
+
+        embed_keys = [
+            key
+            for key, lower in _lower_keys(self.meta)
+            if "embed_tokens" in lower or "tok_embeddings" in lower or "word_embeddings" in lower or ".wte" in lower
+        ]
+        if not embed_keys:
+            raise KeyError("No FP16 embedding tensor found in metadata.")
+
         embed_info = self.meta["tensors"][embed_keys[0]]
-        self.vocab_size = embed_info["shape"][0]
-        self.hidden_dim = embed_info["shape"][1]
-        
-        layer_nums = [int(k.split(".")[2]) for k in self.meta["tensors"].keys() if "layers" in k and k.split(".")[2].isdigit()]
-        self.num_layers = max(layer_nums) + 1 if layer_nums else 24
-        self.num_heads = self.hidden_dim // 128
-        if self.num_heads == 0: self.num_heads = 32
-            
+        if embed_info.get("type") != "float16":
+            raise TypeError("Embedding tensor must be stored as float16. Re-run quantizer.py with the v2 format.")
+        self.vocab_size = int(embed_info["shape"][0])
+        self.hidden_dim = int(embed_info["shape"][1])
+
+        layer_nums = [_layer_number_from_key(key) for key in self.meta["tensors"].keys()]
+        layer_nums = [num for num in layer_nums if num is not None]
+        self.num_layers = max(layer_nums) + 1 if layer_nums else 0
+        if self.num_layers <= 0:
+            raise KeyError("No transformer/MLGRU layer tensors found in metadata.")
+
+        def cfg_value(name: str, default=None):
+            value = getattr(self.config, name, None) if self.config is not None else None
+            if value is None:
+                value = self.meta_config.get(name, default)
+            return default if value is None else value
+
+        self.num_heads = int(cfg_value("num_attention_heads", max(1, self.hidden_dim // 128)))
+        self.head_dim = int(cfg_value("head_dim", max(1, self.hidden_dim // self.num_heads)))
+        self.num_kv_heads = int(cfg_value("num_key_value_heads", self.num_heads))
+        self.kv_dim = self.num_kv_heads * self.head_dim
+        self.inter_dim = self.hidden_dim * 4
+        self.hidden_act = str(cfg_value("hidden_act", "silu") or "silu").lower()
+        self.activation_mode = 1 if self.hidden_act == "relu2" else 0
+        rope_parameters = getattr(self.config, "rope_parameters", None) or {}
+        self.rope_theta = float(
+            rope_parameters.get("rope_theta", cfg_value("rope_theta", 10000.0))
+            if isinstance(rope_parameters, dict)
+            else cfg_value("rope_theta", 10000.0)
+        )
+
         file_size = os.path.getsize(bin_path)
-        print(f"[SYSTEM] 모델 캐싱 중... ({file_size / (1024**3):.2f}GB 물리 RAM 매핑)")
+        print(f"[SYSTEM] Cloning {file_size / (1024**3):.2f}GB package into RAM.")
         self.mmap_tensor = torch.from_file(bin_path, shared=True, size=file_size, dtype=torch.uint8).clone()
 
-        def get_slice_fp16(tensor_name):
-            if tensor_name not in self.meta["tensors"]: return None
-            info = self.meta["tensors"][tensor_name]
-            return self.mmap_tensor[info["offset"] : info["offset"] + info["size"]].view(torch.float16).to(torch.float32)
+        def ensure_float32(tensor: torch.Tensor, shape: list[int]) -> torch.Tensor:
+            return tensor.view(torch.float16).to(torch.float32).reshape(shape).contiguous()
 
-        def get_slice_uint8(tensor_name):
-            if tensor_name not in self.meta["tensors"]: return None
+        def get_slice_fp16(tensor_name: str) -> torch.Tensor | None:
+            info = self.meta["tensors"].get(tensor_name)
+            if not info:
+                return None
+            if info.get("type") != "float16":
+                raise TypeError(f"{tensor_name} is {info.get('type')}, expected float16.")
+            raw = self.mmap_tensor[info["offset"] : info["offset"] + info["size"]]
+            return ensure_float32(raw, info["shape"])
+
+        def packed_row_bytes(info: dict) -> int:
+            if "packed_shape" in info:
+                return int(info["packed_shape"][1])
+            return (int(info["shape"][1]) + 3) // 4
+
+        def get_packed_rows(tensor_name: str, row_start: int = 0, row_count: int | None = None) -> torch.Tensor:
             info = self.meta["tensors"][tensor_name]
-            return self.mmap_tensor[info["offset"] : info["offset"] + info["size"]]
+            if info.get("type") not in {"ternary_2bit_packed", "2bit_packed"}:
+                raise TypeError(f"{tensor_name} is {info.get('type')}, expected packed ternary.")
+            rows = int(info["shape"][0])
+            row_count = rows - row_start if row_count is None else row_count
+            row_bytes = packed_row_bytes(info)
+            offset = int(info["offset"]) + (row_start * row_bytes)
+            size = row_count * row_bytes
+            return self.mmap_tensor[offset : offset + size].contiguous()
 
         self.embed_tensor = get_slice_fp16(embed_keys[0])
-        lm_head_keys = [k for k in self.meta["tensors"].keys() if "lm_head" in k or "output" in k]
+        lm_head_keys = [
+            key
+            for key, lower in _lower_keys(self.meta)
+            if "lm_head" in lower or "embed_out" in lower or lower.endswith("output.weight")
+        ]
         self.lm_head_tensor = get_slice_fp16(lm_head_keys[0]) if lm_head_keys else self.embed_tensor
 
-        def find_norm_weight(l, patterns):
-            for p in patterns:
-                for k in self.meta["tensors"].keys():
-                    if f"layers.{l}." in k and p in k and "weight" in k:
-                        return get_slice_fp16(k)
-            return torch.ones(self.hidden_dim, dtype=torch.float32)
+        def find_norm_weight(layer: int, patterns: list[str], fallback_dim: int) -> torch.Tensor:
+            for pattern in patterns:
+                for key, lower in _lower_keys(self.meta):
+                    if f".{layer}." in key and pattern in lower and "weight" in lower:
+                        found = get_slice_fp16(key)
+                        if found is not None:
+                            return found.reshape(-1).contiguous()
+            return torch.ones(fallback_dim, dtype=torch.float32)
 
-        self.layer_norms = []
-        for l in range(self.num_layers):
-            attn_norm = find_norm_weight(l, ["input_layernorm", "ln_1"])
-            ffn_norm = find_norm_weight(l, ["post_attention_layernorm", "ln_2"])
-            self.layer_norms.extend([attn_norm, ffn_norm])
-            
-        final_norm_keys = [k for k in self.meta["tensors"].keys() if "model.norm.weight" in k or "ln_f" in k]
+        final_norm_keys = [
+            key
+            for key, lower in _lower_keys(self.meta)
+            if lower == "model.norm.weight" or lower.endswith(".ln_f.weight") or lower.endswith(".final_layernorm.weight")
+        ]
         self.final_norm = get_slice_fp16(final_norm_keys[0]) if final_norm_keys else torch.ones(self.hidden_dim, dtype=torch.float32)
+        self.final_norm = self.final_norm.reshape(self.hidden_dim).contiguous()
 
-        def get_target_tensor(patterns):
-            for p in patterns:
-                for k in self.meta["tensors"].keys():
-                    if f"layers.{l}." in k and p in k and "weight" in k and "norm" not in k:
-                        return get_slice_uint8(k), float(self.meta["tensors"][k].get("gamma", 1.0))
-            return torch.zeros(0, dtype=torch.uint8), 1.0
+        def layer_key_matches(key: str, lower: str, layer: int, pattern: str) -> bool:
+            return f".{layer}." in key and pattern in lower and "weight" in lower and "norm" not in lower
 
-        self.layer_tensors, self.layer_gammas = [], []
-        for l in range(self.num_layers):
-            q_t, q_g = get_target_tensor(["q_proj", "query_key_value"])
-            k_t, k_g = get_target_tensor(["k_proj", "query_key_value"])
-            v_t, v_g = get_target_tensor(["v_proj", "query_key_value"])
-            o_t, o_g = get_target_tensor(["o_proj", "dense", "out"])
-            gate_t, gate_g = get_target_tensor(["gate_proj", "dense_h_to_4h", "w1"])
-            up_t, up_g = get_target_tensor(["up_proj", "w3"])
-            down_t, down_g = get_target_tensor(["down_proj", "dense_4h_to_h", "w2"])
-            for t, g in [(q_t, q_g), (k_t, k_g), (v_t, v_g), (o_t, o_g), (gate_t, gate_g), (up_t, up_g), (down_t, down_g)]:
-                self.layer_tensors.append(t)
-                self.layer_gammas.append(g)
-        print(f"[SYSTEM] 아키텍처 및 정규화 가중치 로드 완료 (Layers: {self.num_layers}, Hidden: {self.hidden_dim})")
+        def get_linear_tensor(layer: int, patterns: list[str], qkv_part: int | None = None) -> tuple[torch.Tensor, float, int]:
+            for pattern in patterns:
+                for key, lower in _lower_keys(self.meta):
+                    if not layer_key_matches(key, lower, layer, pattern):
+                        continue
+                    info = self.meta["tensors"][key]
+                    gamma = float(info.get("gamma", 1.0))
+                    rows = int(info["shape"][0])
+                    if "query_key_value" in lower and qkv_part is not None and rows >= self.hidden_dim * 3:
+                        return get_packed_rows(key, qkv_part * self.hidden_dim, self.hidden_dim), gamma, self.hidden_dim
+                    if rows > self.hidden_dim and any(part in lower for part in ("gate", "up", "w1", "w3", "dense_h_to_4h")):
+                        self.inter_dim = rows
+                    return get_packed_rows(key), gamma, rows
+            return torch.zeros(0, dtype=torch.uint8), 1.0, 0
 
-    def generate(self, prompt_text, max_new_tokens=150):
-        formatted_prompt = prompt_text 
-        prompt_tokens = self.tokenizer.encode(formatted_prompt, add_special_tokens=True)
-        if not prompt_tokens: prompt_tokens = [0]
-            
+        self.layer_tensors: list[torch.Tensor] = []
+        self.layer_gammas: list[float] = []
+        for layer in range(self.num_layers):
+            q_t, q_g, _ = get_linear_tensor(layer, ["q_proj", "query_key_value"], qkv_part=0)
+            k_t, k_g, k_rows = get_linear_tensor(layer, ["k_proj", "query_key_value"], qkv_part=1)
+            v_t, v_g, v_rows = get_linear_tensor(layer, ["v_proj", "query_key_value"], qkv_part=2)
+            o_t, o_g, _ = get_linear_tensor(layer, ["o_proj", "dense", "out_proj"])
+            gate_t, gate_g, gate_rows = get_linear_tensor(layer, ["gate_proj", "dense_h_to_4h", "w1"])
+            up_t, up_g, up_rows = get_linear_tensor(layer, ["up_proj", "w3"])
+            down_t, down_g, _ = get_linear_tensor(layer, ["down_proj", "dense_4h_to_h", "w2"])
+            if k_rows:
+                self.kv_dim = k_rows
+            if v_rows and v_rows != self.kv_dim:
+                raise ValueError(f"K/V projection mismatch in layer {layer}: k={self.kv_dim}, v={v_rows}")
+            if gate_rows:
+                self.inter_dim = gate_rows
+            elif up_rows:
+                self.inter_dim = up_rows
+
+            for tensor, gamma in (
+                (q_t, q_g),
+                (k_t, k_g),
+                (v_t, v_g),
+                (o_t, o_g),
+                (gate_t, gate_g),
+                (up_t, up_g),
+                (down_t, down_g),
+            ):
+                self.layer_tensors.append(tensor)
+                self.layer_gammas.append(gamma)
+
+        if self.kv_dim <= 0:
+            self.kv_dim = self.hidden_dim
+        if self.kv_dim % self.head_dim == 0:
+            self.num_kv_heads = max(1, self.kv_dim // self.head_dim)
+        else:
+            self.num_kv_heads = self.num_heads
+            self.kv_dim = self.num_kv_heads * self.head_dim
+
+        self.layer_norms: list[torch.Tensor] = []
+        for layer in range(self.num_layers):
+            attn_norm = find_norm_weight(layer, ["input_layernorm", "ln_1", "attention_norm"], self.hidden_dim)
+            ffn_norm = find_norm_weight(layer, ["post_attention_layernorm", "ln_2"], self.hidden_dim)
+            attn_sub_norm = find_norm_weight(layer, ["attn_sub_norm"], self.hidden_dim)
+            ffn_sub_norm = find_norm_weight(layer, ["ffn_sub_norm"], self.inter_dim)
+            self.layer_norms.extend([attn_norm, ffn_norm, attn_sub_norm, ffn_sub_norm])
+
+        print(
+            "[SYSTEM] Runtime ready "
+            f"(layers={self.num_layers}, hidden={self.hidden_dim}, inter={self.inter_dim}, "
+            f"heads={self.num_heads}, kv_heads={self.num_kv_heads}, kv_dim={self.kv_dim}, "
+            f"act={self.hidden_act}, rope_theta={self.rope_theta:g}, "
+            f"architecture={self.architecture}, top_k={self.top_k or 'dense'})."
+        )
+
+    def format_prompt(self, prompt_text: str) -> str:
+        prompt_text = prompt_text.strip()
+        if self.prompt_template == "qa" or (self.prompt_template == "auto" and prompt_text.endswith("?")):
+            return f"Question: {prompt_text}\nAnswer:"
+        return prompt_text
+
+    def generate(self, prompt_text: str, max_new_tokens: int = 150):
+        formatted_prompt = self.format_prompt(prompt_text)
+        prompt_tokens = self.tokenizer.encode(formatted_prompt, add_special_tokens=True) or [0]
         eos_id = self.tokenizer.eos_token_id
-        if eos_id is None: eos_id = 2 
-        if isinstance(eos_id, list): eos_id = eos_id[0]
+        if eos_id is None:
+            eos_id = 2
+        if isinstance(eos_id, list):
+            eos_id = eos_id[0]
+
+        # Base completion checkpoints (e.g. bitnet-b1.58-2B-4T) do not emit EOS at
+        # the end of an answer; they continue with the next "Question:" line. When
+        # a Q&A template is active, stop at the first newline so the reply stays
+        # clean. A plain prompt keeps raw continuation behavior.
+        stop_token_ids: list[int] = []
+        is_qa_prompt = self.prompt_template == "qa" or (
+            self.prompt_template == "auto" and prompt_text.strip().endswith("?")
+        )
+        if is_qa_prompt:
+            for stop_text in ("\n", "\n\n"):
+                enc = self.tokenizer.encode(stop_text, add_special_tokens=False)
+                if enc and enc[0] not in stop_token_ids:
+                    stop_token_ids.append(enc[0])
 
         start_time = time.perf_counter()
-        
-        output_tokens = evolved_engine.force_evolved_generate_cpp(
-            prompt_tokens, max_new_tokens, self.hidden_dim, self.num_layers, self.num_heads, self.vocab_size, eos_id,
-            self.layer_tensors, self.layer_gammas, self.layer_norms, self.final_norm,
-            self.embed_tensor, self.lm_head_tensor
+        runtime = get_runtime()
+        output_tokens = runtime.force_evolved_generate_cpp(
+            prompt_tokens,
+            max_new_tokens,
+            self.hidden_dim,
+            self.inter_dim,
+            self.kv_dim,
+            self.num_layers,
+            self.num_heads,
+            self.num_kv_heads,
+            self.vocab_size,
+            eos_id,
+            stop_token_ids,
+            self.top_k,
+            self.architecture_mode,
+            self.activation_mode,
+            self.rope_theta,
+            self.layer_tensors,
+            self.layer_gammas,
+            self.layer_norms,
+            self.final_norm,
+            self.embed_tensor,
+            self.lm_head_tensor,
         )
         elapsed = (time.perf_counter() - start_time) * 1000.0
-        
-        gen_tokens = output_tokens[len(prompt_tokens):]
+
+        gen_tokens = output_tokens[len(prompt_tokens) :]
         output_text = self.tokenizer.decode(gen_tokens, skip_special_tokens=True)
-        
         gen_len = max(len(gen_tokens), 1)
         return output_text, elapsed, gen_len
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("cmd", nargs="?", default="chat")
+    parser.add_argument("--bin", default="leviathan_native.bin")
+    parser.add_argument("--meta", default="leviathan_native_meta.json")
     parser.add_argument("--max-new", type=int, default=150)
+    parser.add_argument("--top-k", type=int, default=0, help="Activate only the largest K input activations per bitlinear layer")
+    parser.add_argument("--architecture", choices=["transformer", "mlgru"], default="transformer")
+    parser.add_argument("--prompt-template", choices=["auto", "plain", "qa"], default="auto")
     args = parser.parse_args()
 
     print("=" * 100)
-    print("[PHASE 49] THE LEVIATHAN - True Architecture (Final Resolution)")
+    print("[PHASE 50] THE LEVIATHAN - Sparse SIMD / MLGRU Runtime")
     print("=" * 100)
-    
-    engine = RestoredBitNet()
+
+    engine = RestoredBitNet(
+        bin_path=args.bin,
+        meta_path=args.meta,
+        architecture=args.architecture,
+        top_k=args.top_k,
+        prompt_template=args.prompt_template,
+    )
     while True:
-        try: prompt = input("\nUSER> ").strip()
-        except EOFError: break
-        if not prompt or prompt.lower() in {"/exit", "exit", "quit"}: break
+        try:
+            prompt = input("\nUSER> ").strip()
+        except EOFError:
+            break
+        if not prompt or prompt.lower() in {"/exit", "exit", "quit"}:
+            break
 
         text, elapsed, gen_len = engine.generate(prompt, args.max_new)
         print(f"\nENGINE> {text.strip()}")
         print(f"[Stats: {elapsed:.2f} ms | {gen_len / (max(elapsed / 1000.0, 1e-5)):.2f} tokens/sec]")
+
 
 if __name__ == "__main__":
     main()
