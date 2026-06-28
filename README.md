@@ -97,7 +97,11 @@ Use `--prompt-template plain` if you want raw continuation behavior.
 Run with Top-K sparse bitlinear:
 
 ```bash
-python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 512
+python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 0.8
+
+python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 0.9
+
+python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 2048
 ```
 
 Run the experimental MLGRU path:
