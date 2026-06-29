@@ -261,10 +261,10 @@ Recommended distribution:
 2. **GitHub Releases**: small zipped proof packages and screenshots.
 3. **Hugging Face model repo**: model package, tokenizer, metadata, model card, sample outputs.
 
-Suggested Hugging Face model repository name:
+Published Hugging Face model repository:
 
 ```text
-ShiningSon/Leviathan-MLGRU-30M-TinyStories
+Model package: https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories
 ```
 
 Suggested files:
@@ -278,7 +278,7 @@ report.json
 sample_outputs.txt
 ```
 
-The GitHub README should link to the model repository once uploaded.
+The model package contains the exported MLGRU binary, metadata, tokenizer, model card, benchmark report, and sample outputs.
 
 ---
 
