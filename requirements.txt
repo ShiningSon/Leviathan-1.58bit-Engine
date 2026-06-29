@@ -1,0 +1,10 @@
+torch
+safetensors
+huggingface_hub
+transformers
+tokenizers
+datasets
+ninja
+numpy
+tqdm
+modal
