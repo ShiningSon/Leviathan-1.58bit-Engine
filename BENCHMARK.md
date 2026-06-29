@@ -9,17 +9,16 @@ It is intended to document what currently works, what does not yet work, and wha
 
 ## Environment
 
-Fill these fields in before publishing the final benchmark table:
-
 ```text
-OS: Windows
-CPU: TODO: add exact CPU model
-RAM: TODO
-Compiler: MSVC / PyTorch C++ extension
-Python: TODO
-PyTorch: TODO
-Engine commit: TODO
-Model package: Leviathan-MLGRU-30M-TinyStories-v0.1
+OS: Microsoft Windows 11 Pro 64-bit, version 10.0.26200, build 26200
+CPU: 13th Gen Intel(R) Core(TM) i5-13600KF, 14 cores / 20 logical processors
+RAM: 31.7 GiB visible system memory
+Compiler: MSVC 19.51.36246 for x64 via Visual Studio Community / PyTorch C++ extension
+Python: 3.10.11
+PyTorch: 2.12.1+cpu
+CUDA: not used for local inference benchmark
+Engine commit: c8c7f6733d95
+Model package: https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories
 ```
 
 Runtime notes:

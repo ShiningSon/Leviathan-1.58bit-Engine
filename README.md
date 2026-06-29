@@ -76,6 +76,7 @@ Current proof model:
 - steps: 2000
 - exported to Leviathan v2 format
 - runs locally with `engine.py --architecture mlgru`
+- model package: [ShiningS04/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories)
 
 The proof model is intentionally small. It is meant to validate the full route:
 
@@ -94,6 +95,7 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |-- training/
 |   `-- 01_train_export_mlgru_modal_T4_clean.py
 |-- BENCHMARK.md                      # Current runtime benchmark notes
+|-- LICENSE                           # MIT License
 |-- requirements.txt                  # Python dependencies
 |-- .gitignore                        # Excludes model binaries, caches, venvs, and build outputs
 `-- README.md                         # Project overview
@@ -111,7 +113,7 @@ You need Python, PyTorch, Hugging Face tools, and a working C++ compiler.
 On Windows, PyTorch C++ extensions expect the MSVC toolchain, usually from Visual Studio Build Tools or a Developer PowerShell.
 
 ```bash
-pip install torch safetensors huggingface_hub transformers tokenizers datasets ninja
+pip install -r requirements.txt
 ```
 
 ---
@@ -148,6 +150,10 @@ python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --
 ## Running the MLGRU proof model
 
 The 30M proof model is not a general assistant model. It is a small recurrent language model trained on TinyStories to validate the MLGRU runtime/export path.
+
+Download the model package from Hugging Face:
+
+[ShiningS04/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories)
 
 Expected local package files:
 
@@ -263,9 +269,7 @@ Recommended distribution:
 
 Published Hugging Face model repository:
 
-```text
-Model package: https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories
-```
+[ShiningS04/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories)
 
 Suggested files:
 
@@ -303,6 +307,12 @@ PTQ conversion can be useful for runtime stress tests, but coherent generation r
 - Top-K is not faster at 30M scale in the current implementation.
 - MLGRU mode requires compatible recurrent weights.
 - Larger models, better datasets, and kernel-level sparse optimizations are needed before claiming major speedups.
+
+---
+
+## License
+
+This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 
 ---
 
