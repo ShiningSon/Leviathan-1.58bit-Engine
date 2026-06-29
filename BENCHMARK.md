@@ -18,7 +18,7 @@ Python: 3.10.11
 PyTorch: 2.12.1+cpu
 CUDA: not used for local inference benchmark
 Engine commit: c8c7f6733d95
-Model package: https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories
+Model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories
 ```
 
 Runtime notes:

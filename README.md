@@ -76,7 +76,7 @@ Current proof model:
 - steps: 2000
 - exported to Leviathan v2 format
 - runs locally with `engine.py --architecture mlgru`
-- model package: [ShiningS04/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories)
+- model package: [ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
 
 The proof model is intentionally small. It is meant to validate the full route:
 
@@ -153,7 +153,7 @@ The 30M proof model is not a general assistant model. It is a small recurrent la
 
 Download the model package from Hugging Face:
 
-[ShiningS04/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories)
+[ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
 
 Expected local package files:
 
@@ -269,7 +269,7 @@ Recommended distribution:
 
 Published Hugging Face model repository:
 
-[ShiningS04/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningS04/Leviathan-MLGRU-30M-TinyStories)
+[ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
 
 Suggested files:
 
