@@ -17,7 +17,7 @@ Compiler: MSVC 19.51.36246 for x64 via Visual Studio Community / PyTorch C++ ext
 Python: 3.10.11
 PyTorch: 2.12.1+cpu
 CUDA: not used for local inference benchmark
-Engine commit: c8c7f6733d95
+Engine commit: 6a05e63ab636
 Model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories
 ```
 
