@@ -96,7 +96,12 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |   |-- 01_train_export_mlgru_modal_T4_clean.py
 |   |-- 03_train_supervised_qa_mlgru_modal_T4.py
 |   `-- instruction_qa_supervised_v02b.jsonl
+|-- scripts/
+|   `-- benchmark_engine.py
+|-- benchmarks/
+|   `-- prompts_v02b_qa.json
 |-- docs/
+|   |-- BENCHMARK_AUTOMATION.md
 |   `-- V02B_SUPERVISED_QA_GUIDE.md
 |-- BENCHMARK.md                      # Current runtime benchmark notes
 |-- LICENSE                           # MIT License
@@ -400,9 +405,11 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 
 ### v0.3: benchmark automation
 
-- [ ] Add repeatable benchmark script.
-- [ ] Test multiple prompts and max-new values.
-- [ ] Record CPU model and compiler details.
+- [x] Add repeatable benchmark script.
+- [x] Test multiple prompts and max-new values for v0.2b QA benchmark.
+- [x] Record CPU model and compiler details.
+- [ ] Expand benchmark prompt set.
+- [ ] Test on additional CPUs.
 
 ### v0.4: sparse kernel work
 

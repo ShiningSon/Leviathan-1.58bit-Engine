@@ -267,17 +267,26 @@ python engine.py \
   --prompt-template qa
 ```
 
-### Results
+### Automated benchmark results
 
-| Mode | Setting | QA matching | Speed |
-|---|---:|---:|---:|
-| Dense | `--top-k 0` | Pass | not recorded |
-| Top-K 0.9 | `--top-k 0.9` | Pass | not recorded |
-| Top-K 0.8 | `--top-k 0.8` | Pass | not recorded |
+Command settings:
+
+- Architecture: `mlgru`
+- Prompt template: `qa`
+- Max new tokens: `80`
+- Repeats: `3`
+- Warmup runs per mode: `1`
+- Prompt set: `benchmarks/prompts_v02b_qa.json`
+
+| Mode | Setting | Avg latency | Avg tokens/sec | QA pass rate | Notes |
+|---|---:|---:|---:|---:|---|
+| Dense | `--top-k 0` | 57.64 ms | 313.84 tok/s | 12/12 (100.0%) | QA matching preserved in this run |
+| Top-K 0.9 | `--top-k 0.9` | 113.83 ms | 140.05 tok/s | 12/12 (100.0%) | QA matching preserved in this run |
+| Top-K 0.8 | `--top-k 0.8` | 105.03 ms | 153.49 tok/s | 12/12 (100.0%) | QA matching preserved in this run |
 
 ### Interpretation
 
 ```text
 v0.2b demonstrates that a 30M Leviathan-trained MLGRU proof model can learn stable project-specific QA mappings when run with --prompt-template qa.
-Top-K 0.9 and 0.8 preserved the tested QA mappings, but this benchmark does not claim Top-K speedup.
+Dense remained the fastest observed mode for the 30M v0.2b model. Top-K 0.9 and 0.8 preserved the tested QA matching but did not show a speedup in this benchmark.
 ```
