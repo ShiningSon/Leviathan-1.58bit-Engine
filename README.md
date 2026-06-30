@@ -424,7 +424,7 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 - [x] Publish initial Hugging Face proof model packages.
 - [x] Demonstrate a trained recurrent ternary model running locally on CPU.
 - [ ] Demonstrate sparse activation speedups on a larger model or improved sparse kernel.
-- [ ] Add repeatable benchmark automation.
+- [x] Add repeatable benchmark automation.
 
 ---
 
