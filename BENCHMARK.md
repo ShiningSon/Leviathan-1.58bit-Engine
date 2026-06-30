@@ -230,3 +230,53 @@ For future scaling:
 ```text
 Top-K should be retested on 70M/100M models and after sparse-kernel optimization.
 ```
+
+---
+
+## Model: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b
+
+```text
+Prompt template: qa
+Purpose: project-specific QA matching
+```
+
+### Runtime command pattern
+
+Dense MLGRU QA:
+
+```bash
+python engine.py \
+  --bin leviathan_mlgru_30m_instruct_v02b.bin \
+  --meta leviathan_mlgru_30m_instruct_v02b_meta.json \
+  --architecture mlgru \
+  --top-k 0 \
+  --max-new 80 \
+  --prompt-template qa
+```
+
+Top-K QA check:
+
+```bash
+python engine.py \
+  --bin leviathan_mlgru_30m_instruct_v02b.bin \
+  --meta leviathan_mlgru_30m_instruct_v02b_meta.json \
+  --architecture mlgru \
+  --top-k 0.9 \
+  --max-new 80 \
+  --prompt-template qa
+```
+
+### Results
+
+| Mode | Setting | QA matching | Speed |
+|---|---:|---:|---:|
+| Dense | `--top-k 0` | Pass | not recorded |
+| Top-K 0.9 | `--top-k 0.9` | Pass | not recorded |
+| Top-K 0.8 | `--top-k 0.8` | Pass | not recorded |
+
+### Interpretation
+
+```text
+v0.2b demonstrates that a 30M Leviathan-trained MLGRU proof model can learn stable project-specific QA mappings when run with --prompt-template qa.
+Top-K 0.9 and 0.8 preserved the tested QA mappings, but this benchmark does not claim Top-K speedup.
+```

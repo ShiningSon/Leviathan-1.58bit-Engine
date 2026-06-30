@@ -93,7 +93,11 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |-- engine.py                         # C++/OpenMP CPU runtime with dense, Top-K, and MLGRU paths
 |-- quantizer.py                      # Streams compatible safetensors checkpoints into Leviathan v2 packages
 |-- training/
-|   `-- 01_train_export_mlgru_modal_T4_clean.py
+|   |-- 01_train_export_mlgru_modal_T4_clean.py
+|   |-- 03_train_supervised_qa_mlgru_modal_T4.py
+|   `-- instruction_qa_supervised_v02b.jsonl
+|-- docs/
+|   `-- V02B_SUPERVISED_QA_GUIDE.md
 |-- BENCHMARK.md                      # Current runtime benchmark notes
 |-- LICENSE                           # MIT License
 |-- requirements.txt                  # Python dependencies
@@ -194,6 +198,68 @@ Once upon a time
 ```
 
 TinyStories-trained proof models are expected to produce simple story-like completions, not instruction-following answers.
+
+---
+
+## Running the v0.2b supervised QA proof model
+
+`Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b` is a supervised QA proof model. It is not a general assistant.
+
+This release validates that a tiny Leviathan-trained MLGRU model can answer project-specific prompts after supervised QA training. For the tested project QA prompts, it should be run with `--prompt-template qa`. Use `--prompt-template plain` only for raw continuation experiments, where QA matching can break.
+
+For the current 30M model, dense mode is the default recommendation. Top-K `0.9` and `0.8` preserved QA matching in local tests, but no Top-K speedup claim is made.
+
+Planned Hugging Face repository:
+
+[ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b) will be published after the v0.2b model upload is approved.
+
+Expected local package files:
+
+```text
+leviathan_mlgru_30m_instruct_v02b.bin
+leviathan_mlgru_30m_instruct_v02b_meta.json
+leviathan_mlgru_tokenizer/
+```
+
+Recommended dense QA run:
+
+```bash
+python engine.py \
+  --bin leviathan_mlgru_30m_instruct_v02b.bin \
+  --meta leviathan_mlgru_30m_instruct_v02b_meta.json \
+  --architecture mlgru \
+  --top-k 0 \
+  --max-new 80 \
+  --prompt-template qa
+```
+
+Top-K QA check:
+
+```bash
+python engine.py \
+  --bin leviathan_mlgru_30m_instruct_v02b.bin \
+  --meta leviathan_mlgru_30m_instruct_v02b_meta.json \
+  --architecture mlgru \
+  --top-k 0.9 \
+  --max-new 80 \
+  --prompt-template qa
+```
+
+Confirmed project QA examples:
+
+```text
+USER> What is Leviathan?
+ENGINE> Leviathan is an experimental CPU inference engine for ternary and recurrent language models.
+
+USER> What is MLGRU?
+ENGINE> MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps.
+
+USER> What is Top-K activation sparsity?
+ENGINE> Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation.
+
+USER> What dataset was this proof model trained on?
+ENGINE> The first proof model was trained on TinyStories.
+```
 
 ---
 

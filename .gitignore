@@ -25,3 +25,8 @@ exports/
 .env
 .env.*
 *.log
+
+# Local model packages are uploaded to Hugging Face, not committed to main.
+/leviathan_mlgru_30m_instruct_v02/
+/leviathan_mlgru_30m_instruct_v02b/
+/sample_outputs_v02b.txt
