@@ -1,0 +1,18 @@
+[
+  {
+    "prompt": "What is Leviathan?",
+    "expected": ["Leviathan", "CPU inference engine", "ternary", "recurrent"]
+  },
+  {
+    "prompt": "What is MLGRU?",
+    "expected": ["MLGRU", "recurrent", "state", "attention"]
+  },
+  {
+    "prompt": "What is Top-K activation sparsity?",
+    "expected": ["Top-K", "largest activations", "smaller activations", "reduce computation"]
+  },
+  {
+    "prompt": "What dataset was this proof model trained on?",
+    "expected": ["TinyStories"]
+  }
+]

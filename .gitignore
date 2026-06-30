@@ -12,6 +12,7 @@ dist/
 .cache/
 .modal/
 runs/
+benchmark_runs/
 checkpoints/
 exports/
 *.pt
