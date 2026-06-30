@@ -391,11 +391,12 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 - [x] Run locally through `engine.py --architecture mlgru`.
 - [x] Record dense vs ratio Top-K benchmark.
 
-### v0.2: instruction-mix model
+### v0.2b: supervised QA proof model
 
-- [ ] Add TinyStories + small instruction/QA mixture.
-- [ ] Improve short QA behavior.
-- [ ] Add sample outputs and model card.
+- [x] Add TinyStories + supervised project-specific QA mixture.
+- [x] Improve short project-specific QA behavior with `--prompt-template qa`.
+- [x] Publish sample outputs and model card for the v0.2b proof model.
+- [ ] Expand QA coverage beyond the small project-specific seed set.
 
 ### v0.3: benchmark automation
 
@@ -412,10 +413,11 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 
 ### v1.0 target
 
-- [ ] Publish GitHub source + benchmarks.
-- [ ] Publish Hugging Face model package.
-- [ ] Demonstrate a trained recurrent ternary model running locally on CPU.
+- [x] Publish initial GitHub source + proof benchmarks.
+- [x] Publish initial Hugging Face proof model packages.
+- [x] Demonstrate a trained recurrent ternary model running locally on CPU.
 - [ ] Demonstrate sparse activation speedups on a larger model or improved sparse kernel.
+- [ ] Add repeatable benchmark automation.
 
 ---
 
