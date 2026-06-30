@@ -209,9 +209,9 @@ This release validates that a tiny Leviathan-trained MLGRU model can answer proj
 
 For the current 30M model, dense mode is the default recommendation. Top-K `0.9` and `0.8` preserved QA matching in local tests, but no Top-K speedup claim is made.
 
-Planned Hugging Face repository:
+Published Hugging Face repository:
 
-[ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b) will be published after the v0.2b model upload is approved.
+[ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b)
 
 Expected local package files:
 
