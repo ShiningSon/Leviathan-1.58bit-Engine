@@ -1,18 +1,142 @@
 [
   {
     "prompt": "What is Leviathan?",
-    "expected": ["Leviathan", "CPU inference engine", "ternary", "recurrent"]
+    "expected": [
+      "Leviathan",
+      "CPU inference engine"
+    ]
+  },
+  {
+    "prompt": "Define Leviathan briefly.",
+    "expected": [
+      "Leviathan",
+      "CPU inference engine"
+    ]
+  },
+  {
+    "prompt": "What does Leviathan do?",
+    "expected": [
+      "Leviathan",
+      "ternary",
+      "language models"
+    ]
   },
   {
     "prompt": "What is MLGRU?",
-    "expected": ["MLGRU", "recurrent", "state", "attention"]
+    "expected": [
+      "MLGRU",
+      "recurrent",
+      "state"
+    ]
+  },
+  {
+    "prompt": "Define MLGRU.",
+    "expected": [
+      "MLGRU",
+      "recurrent"
+    ]
+  },
+  {
+    "prompt": "How does MLGRU differ from attention?",
+    "expected": [
+      "recurrent",
+      "attention"
+    ]
   },
   {
     "prompt": "What is Top-K activation sparsity?",
-    "expected": ["Top-K", "largest activations", "smaller activations", "reduce computation"]
+    "expected": [
+      "Top-K",
+      "largest activations",
+      "smaller activations"
+    ]
+  },
+  {
+    "prompt": "What does Top-K do?",
+    "expected": [
+      "Top-K",
+      "activations"
+    ]
+  },
+  {
+    "prompt": "How does Top-K reduce computation?",
+    "expected": [
+      "activations",
+      "computation"
+    ]
+  },
+  {
+    "prompt": "What is dense mode?",
+    "expected": [
+      "Dense mode",
+      "all activations"
+    ]
+  },
+  {
+    "prompt": "What does --top-k 0 mean?",
+    "expected": [
+      "--top-k 0",
+      "all activations"
+    ]
+  },
+  {
+    "prompt": "Which mode uses all activations?",
+    "expected": [
+      "Dense",
+      "all activations"
+    ]
   },
   {
     "prompt": "What dataset was this proof model trained on?",
-    "expected": ["TinyStories"]
+    "expected": [
+      "TinyStories"
+    ]
+  },
+  {
+    "prompt": "Was the proof model trained on TinyStories?",
+    "expected": [
+      "TinyStories"
+    ]
+  },
+  {
+    "prompt": "Is this model a general assistant?",
+    "expected": [
+      "No",
+      "proof model"
+    ]
+  },
+  {
+    "prompt": "What is the limitation of this proof model?",
+    "expected": [
+      "proof model"
+    ]
+  },
+  {
+    "prompt": "What files are inside a Leviathan MLGRU model package?",
+    "expected": [
+      ".bin",
+      "metadata",
+      "tokenizer"
+    ]
+  },
+  {
+    "prompt": "What files do I need to run the model?",
+    "expected": [
+      ".bin",
+      "metadata",
+      "tokenizer"
+    ]
+  },
+  {
+    "prompt": "Where should source code be uploaded?",
+    "expected": [
+      "GitHub"
+    ]
+  },
+  {
+    "prompt": "Where should model files be uploaded?",
+    "expected": [
+      "Hugging Face"
+    ]
   }
 ]

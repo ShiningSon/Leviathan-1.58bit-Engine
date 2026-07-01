@@ -408,7 +408,7 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 - [x] Add repeatable benchmark script.
 - [x] Test multiple prompts and max-new values for v0.2b QA benchmark.
 - [x] Record CPU model and compiler details.
-- [ ] Expand benchmark prompt set.
+- [x] Expand benchmark prompt set.
 - [ ] Test on additional CPUs.
 
 ### v0.4: sparse kernel work

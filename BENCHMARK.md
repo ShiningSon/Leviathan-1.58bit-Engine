@@ -276,17 +276,18 @@ Command settings:
 - Max new tokens: `80`
 - Repeats: `3`
 - Warmup runs per mode: `1`
-- Prompt set: `benchmarks/prompts_v02b_qa.json`
+- Prompt set: expanded `benchmarks/prompts_v02b_qa.json`, 20 prompts
 
 | Mode | Setting | Avg latency | Avg tokens/sec | QA pass rate | Notes |
 |---|---:|---:|---:|---:|---|
-| Dense | `--top-k 0` | 57.64 ms | 313.84 tok/s | 12/12 (100.0%) | QA matching preserved in this run |
-| Top-K 0.9 | `--top-k 0.9` | 113.83 ms | 140.05 tok/s | 12/12 (100.0%) | QA matching preserved in this run |
-| Top-K 0.8 | `--top-k 0.8` | 105.03 ms | 153.49 tok/s | 12/12 (100.0%) | QA matching preserved in this run |
+| Dense | `--top-k 0` | 54.17 ms | 371.08 tok/s | 54/60 (90.0%) | Expanded prompt set; review missing keyword matches |
+| Top-K 0.9 | `--top-k 0.9` | 129.07 ms | 161.52 tok/s | 54/60 (90.0%) | Same QA pass rate as dense; slower than dense |
+| Top-K 0.8 | `--top-k 0.8` | 112.35 ms | 172.15 tok/s | 54/60 (90.0%) | Same QA pass rate as dense; slower than dense |
 
 ### Interpretation
 
 ```text
-v0.2b demonstrates that a 30M Leviathan-trained MLGRU proof model can learn stable project-specific QA mappings when run with --prompt-template qa.
-Dense remained the fastest observed mode for the 30M v0.2b model. Top-K 0.9 and 0.8 preserved the tested QA matching but did not show a speedup in this benchmark.
+The expanded prompt set increased the v0.2b QA regression check from 4 prompts to 20 prompts. Dense, Top-K 0.9, and Top-K 0.8 all reached 90.0% keyword-match pass rate. Dense remained the fastest observed mode. Top-K preserved the tested QA matching rate but did not show a speedup in this benchmark.
+
+The remaining failures were concentrated around short paraphrases such as "What does Top-K do?" and one model-package wording. This is treated as a QA coverage limitation, not a runtime failure.
 ```

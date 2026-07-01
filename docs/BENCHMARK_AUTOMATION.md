@@ -10,6 +10,8 @@ Use `--prompt-template plain` only for raw continuation experiments. Plain mode 
 
 Dense mode is the default recommendation for the current 30M model. Top-K `0.9` and `0.8` preserved the tested QA mappings in local checks, but do not claim Top-K speedup unless the measured average tokens/sec is actually higher than dense under the same settings.
 
+The v0.2b prompt set has been expanded from the initial 4 prompts to a small 20-prompt regression set. It covers core concepts, runtime modes, prompt-template usage, model packaging, and GitHub/Hugging Face distribution. It is still not a full model evaluation benchmark.
+
 ## Example
 
 From the repository root:
