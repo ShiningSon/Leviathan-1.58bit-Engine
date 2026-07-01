@@ -41,6 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--python", default=sys.executable, help="Python executable used to run engine.py.")
     parser.add_argument("--timeout", type=int, default=600, help="Seconds before each engine run times out.")
     parser.add_argument("--sparse-min-density", type=float, default=None, help="Forward engine.py --sparse-min-density. When set, high-density Top-K can auto-fallback to dense.")
+    parser.add_argument("--no-top-k-sort", action="store_true", help="Forward engine.py --no-top-k-sort for the experimental Top-K no-sort selection path.")
     return parser.parse_args()
 
 
@@ -108,6 +109,7 @@ def run_engine(
     prompts: list[dict[str, Any]],
     timeout: int,
     sparse_min_density: float | None,
+    no_top_k_sort: bool,
 ) -> dict[str, Any]:
     command = [
         python_exe,
@@ -127,6 +129,8 @@ def run_engine(
     ]
     if sparse_min_density is not None:
         command.extend(["--sparse-min-density", str(sparse_min_density)])
+    if no_top_k_sort:
+        command.append("--no-top-k-sort")
     stdin_text = "\n".join(item["prompt"] for item in prompts) + "\nexit\n"
 
     completed = subprocess.run(
@@ -285,6 +289,7 @@ def render_markdown(result: dict[str, Any]) -> str:
         f"- Repeats: `{settings['repeat']}`",
         f"- Warmup runs per mode: `{settings['warmup']}`",
         f"- Sparse min density: `{settings.get('sparse_min_density') if settings.get('sparse_min_density') is not None else 'not set'}`",
+        f"- No Top-K sort: `{settings.get('no_top_k_sort', False)}`",
         "",
         "| Mode | Avg latency | Avg tokens/sec | QA pass rate | Notes |",
         "|---|---:|---:|---:|---|",
@@ -383,6 +388,7 @@ def main() -> int:
             "repeat": args.repeat,
             "warmup": args.warmup,
             "sparse_min_density": args.sparse_min_density,
+            "no_top_k_sort": args.no_top_k_sort,
         },
         "paths": {
             "repo_root": str(root),
@@ -420,6 +426,7 @@ def main() -> int:
                 prompts=prompts,
                 timeout=args.timeout,
                 sparse_min_density=args.sparse_min_density,
+                no_top_k_sort=args.no_top_k_sort,
             )
             runs.append(
                 {

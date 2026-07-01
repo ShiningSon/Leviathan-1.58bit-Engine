@@ -64,6 +64,8 @@ Use `--sparse-min-density 0.6` when you want high-density Top-K settings such as
 python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 0.9 --sparse-min-density 0.6
 ```
 
+`--no-top-k-sort` is experimental. It skips the final index sort after Top-K selection. It can reduce selection overhead, but low-density settings may degrade output quality. It is disabled by default.
+
 See [`BENCHMARK.md`](BENCHMARK.md) for the current numbers.
 
 ### 3. MatMul-Free MLGRU runtime mode
@@ -429,9 +431,9 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 
 - [x] Add Top-K profiling mode.
 - [x] Add sparse-min-density fallback for high-density Top-K.
-- [ ] Reduce Top-K selection overhead.
-- [ ] Add threshold sparsity path.
-- [ ] Avoid full sort where possible.
+- [x] Add experimental no-sort Top-K path.
+- [ ] Reduce Top-K selection overhead further.
+- [ ] Add quality-stable threshold or block sparsity path.
 - [ ] Benchmark 70M/100M models.
 
 ### v1.0 target

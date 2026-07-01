@@ -14,6 +14,8 @@ The v0.2b prompt set has been expanded from the initial 4 prompts to a small 20-
 
 For v0.4 sparse fallback checks, pass `--sparse-min-density 0.6` through the benchmark runner. This lets high-density Top-K modes fall back to the dense kernel instead of forcing the sparse path. Treat this as a runtime guardrail; do not describe it as a Top-K speedup unless measured average tokens/sec is higher than dense under the same settings.
 
+For experimental no-sort Top-K checks, add `--no-top-k-sort`. This forwards the engine option that skips the final index sort after Top-K selection. It is disabled by default, and low-density settings should be treated as experimental unless QA matching remains stable.
+
 ## Example
 
 From the repository root:
@@ -30,6 +32,23 @@ python scripts/benchmark_engine.py `
   --repeat 3 `
   --sparse-min-density 0.6 `
   --out-dir .\benchmark_runs\v04_sparse_fallback
+```
+
+No-sort experiment example:
+
+```powershell
+python scripts/benchmark_engine.py `
+  --model-dir .\leviathan_mlgru_30m_instruct_v02b `
+  --engine .\engine.py `
+  --prompts .\benchmarks\prompts_v02b_qa.json `
+  --architecture mlgru `
+  --prompt-template qa `
+  --max-new 80 `
+  --modes 0 0.5 0.3 `
+  --repeat 3 `
+  --sparse-min-density 0.6 `
+  --no-top-k-sort `
+  --out-dir .\benchmark_runs\v04_topk_nosort
 ```
 
 By default, the runner performs one warmup run per mode before the measured repeats. Change this with `--warmup 0` or another integer.

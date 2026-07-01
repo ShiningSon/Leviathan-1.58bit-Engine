@@ -319,3 +319,30 @@ Sparse min density: 0.6
 ```text
 The v0.4 fallback benchmark shows that high-density Top-K should not be forced through the sparse path at 30M scale. With --sparse-min-density 0.6, Top-K 0.9 and 0.8 fall back to the dense kernel and preserve the same 90.0% QA keyword-match pass rate as dense. Top-K 0.5 still uses the sparse path but remains slower than dense. This is a runtime guardrail, not a Top-K speedup claim.
 ```
+
+---
+
+## v0.4 experimental no-sort Top-K benchmark
+
+```text
+Model: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b
+Prompt template: qa
+Max new tokens: 80
+Repeats: 3
+Warmup runs per mode: 1
+Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
+Sparse min density: 0.6
+No Top-K sort: True
+```
+
+| Mode | Setting | Avg latency | Avg tokens/sec | QA pass rate | Notes |
+|---|---:|---:|---:|---:|---|
+| Dense | `--top-k 0` | 51.78 ms | 388.47 tok/s | 54/60 (90.0%) | Dense baseline |
+| Top-K 0.5 no-sort | `--top-k 0.5 --sparse-min-density 0.6 --no-top-k-sort` | 63.34 ms | 294.97 tok/s | 54/60 (90.0%) | Preserved tested QA pass rate but slower than dense |
+| Top-K 0.3 no-sort | `--top-k 0.3 --sparse-min-density 0.6 --no-top-k-sort` | 54.45 ms | 321.18 tok/s | 12/60 (20.0%) | Low-density no-sort degraded QA behavior |
+
+### Interpretation
+
+```text
+The no-sort Top-K experiment reduces Top-K selection overhead by skipping the final sort of active indices after nth_element. In the 30M v0.2b benchmark, Top-K 0.5 with --no-top-k-sort preserved the same 90.0% QA keyword-match pass rate as dense but remained slower. Top-K 0.3 with --no-top-k-sort degraded QA behavior to 20.0%, so low-density no-sort should not be treated as stable. This is an experimental kernel path, not a speedup claim.
+```
