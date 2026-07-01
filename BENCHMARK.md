@@ -26,7 +26,8 @@ Runtime notes:
 
 - The first run includes C++ extension compilation.
 - Reported tokens/sec below should be interpreted as interactive local runtime observations.
-- Repeatable benchmark automation is planned.
+- Repeatable benchmark automation is available through `scripts/benchmark_engine.py`.
+- Generated `benchmark_runs/` outputs are local artifacts and should not be committed.
 
 ---
 

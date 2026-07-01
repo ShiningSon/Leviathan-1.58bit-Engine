@@ -26,10 +26,10 @@ python scripts/benchmark_engine.py `
   --architecture mlgru `
   --prompt-template qa `
   --max-new 80 `
-  --modes 0 0.9 0.8 `
+  --modes 0 0.9 0.8 0.5 `
   --repeat 3 `
   --sparse-min-density 0.6 `
-  --out-dir .\benchmark_runs\v02b
+  --out-dir .\benchmark_runs\v04_sparse_fallback
 ```
 
 By default, the runner performs one warmup run per mode before the measured repeats. Change this with `--warmup 0` or another integer.
@@ -39,9 +39,9 @@ By default, the runner performs one warmup run per mode before the measured repe
 The runner writes:
 
 ```text
-benchmark_runs/v02b/results.json
-benchmark_runs/v02b/results.md
-benchmark_runs/v02b/sample_outputs.txt
+benchmark_runs/v04_sparse_fallback/results.json
+benchmark_runs/v04_sparse_fallback/results.md
+benchmark_runs/v04_sparse_fallback/sample_outputs.txt
 ```
 
 `results.json` contains the full structured benchmark record, including command settings, per-run process results, per-prompt outputs, parsed latency, parsed tokens/sec, and keyword-match details.
@@ -52,7 +52,7 @@ benchmark_runs/v02b/sample_outputs.txt
 
 ## Updating BENCHMARK.md
 
-Run the benchmark, open `benchmark_runs/v02b/results.md`, and review the table plus sample outputs. If the outputs are sane, copy the Markdown summary into `BENCHMARK.md` in a separate documentation commit.
+Run the benchmark, open `benchmark_runs/v04_sparse_fallback/results.md`, and review the table plus sample outputs. If the outputs are sane, copy the Markdown summary into `BENCHMARK.md` in a separate documentation commit.
 
 Do not copy generated files from `benchmark_runs/` into Git history. The folder is ignored because benchmark output is machine-local and can grow over time.
 

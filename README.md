@@ -10,7 +10,7 @@ The current direction is:
 3. experiment with ratio-based Top-K activation sparsity;
 4. support an experimental attention-free MLGRU runtime path for recurrent checkpoints trained for that path.
 
-> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented and preserves generation quality in the 30M proof model, but it is not yet faster at this small scale because selection overhead dominates.
+> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented and preserves tested QA behavior in the 30M proof model, but sparse Top-K is not yet faster at this scale because selection and sparse-kernel overhead dominate. v0.4 adds an optional sparse-min-density fallback so high-density Top-K can fall back to dense kernels as a runtime guardrail.
 
 ---
 
@@ -55,6 +55,14 @@ Current benchmark result:
 - Ratio Top-K preserves readable output in the 30M MLGRU proof model.
 - Dense mode is still faster at 30M scale.
 - Top-K is currently a scaling and kernel-optimization path, not a guaranteed speedup for every model size.
+
+v0.4 guardrail:
+
+Use `--sparse-min-density 0.6` when you want high-density Top-K settings such as `0.9` or `0.8` to fall back to dense kernels instead of forcing the sparse path. This avoids known sparse overhead at 30M scale. It is a guardrail, not a Top-K speedup claim.
+
+```bash
+python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 0.9 --sparse-min-density 0.6
+```
 
 See [`BENCHMARK.md`](BENCHMARK.md) for the current numbers.
 
@@ -248,6 +256,12 @@ python engine.py \
   --top-k 0.9 \
   --max-new 80 \
   --prompt-template qa
+```
+
+For high-density Top-K QA checks on the 30M model, add `--sparse-min-density 0.6` if you want `0.9` or `0.8` to fall back to dense when sparse overhead dominates.
+
+```bash
+python engine.py --bin leviathan_mlgru_30m_instruct_v02b.bin --meta leviathan_mlgru_30m_instruct_v02b_meta.json --architecture mlgru --top-k 0.9 --max-new 80 --prompt-template qa --sparse-min-density 0.6
 ```
 
 Confirmed project QA examples:
