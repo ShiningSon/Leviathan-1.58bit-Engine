@@ -12,6 +12,8 @@ Dense mode is the default recommendation for the current 30M model. Top-K `0.9` 
 
 The v0.2b prompt set has been expanded from the initial 4 prompts to a small 20-prompt regression set. It covers core concepts, runtime modes, prompt-template usage, model packaging, and GitHub/Hugging Face distribution. It is still not a full model evaluation benchmark.
 
+For v0.4 sparse fallback checks, pass `--sparse-min-density 0.6` through the benchmark runner. This lets high-density Top-K modes fall back to the dense kernel instead of forcing the sparse path. Treat this as a runtime guardrail; do not describe it as a Top-K speedup unless measured average tokens/sec is higher than dense under the same settings.
+
 ## Example
 
 From the repository root:
@@ -26,6 +28,7 @@ python scripts/benchmark_engine.py `
   --max-new 80 `
   --modes 0 0.9 0.8 `
   --repeat 3 `
+  --sparse-min-density 0.6 `
   --out-dir .\benchmark_runs\v02b
 ```
 

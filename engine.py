@@ -43,6 +43,10 @@ cpp_source = r"""
 #include <cstdint>
 #include <numeric>
 #include <vector>
+#include <chrono>
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
 
 static const int8_t TERNARY_LUT_I8[4] = {0, 1, -1, 0};
 
@@ -51,6 +55,25 @@ struct TopKDeltaState {
     uint64_t hash = 0;
     int delta_count = 0;
 };
+
+struct ProfileStats {
+    int64_t dense_calls = 0;
+    int64_t topk_calls = 0;
+    int64_t topk_fallback_calls = 0;
+    int64_t topk_select_us = 0;
+    int64_t dense_kernel_us = 0;
+    int64_t sparse_kernel_us = 0;
+    int64_t active_k_sum = 0;
+    int64_t input_dim_sum = 0;
+};
+
+static bool g_profile_enabled = false;
+static ProfileStats g_profile;
+
+static inline int64_t micros_since(std::chrono::high_resolution_clock::time_point start) {
+    const auto end = std::chrono::high_resolution_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+}
 
 static inline int packed_cols_for_dim(int dim) {
     return (dim + 3) / 4;
@@ -212,6 +235,7 @@ void bitlinear_dispatch(
     int32_t* out_accum,
     int top_k_param,
     bool top_k_is_ratio,
+    float sparse_min_density,
     TopKDeltaState* topk_state
 ) {
     // Resolve the effective K for THIS layer. When --top-k is given as a ratio
@@ -225,12 +249,68 @@ void bitlinear_dispatch(
         effective_k = static_cast<int>(std::ceil(density * static_cast<float>(in_dim)));
     }
 
-    if (effective_k > 0 && effective_k < in_dim && topk_state != nullptr) {
+    const float effective_density = in_dim > 0
+        ? static_cast<float>(effective_k) / static_cast<float>(in_dim)
+        : 1.0f;
+    const bool requested_sparse = effective_k > 0 && effective_k < in_dim && topk_state != nullptr;
+    const bool use_sparse = requested_sparse && effective_density <= sparse_min_density;
+
+    if (use_sparse) {
+        std::chrono::high_resolution_clock::time_point t_select;
+        if (g_profile_enabled) t_select = std::chrono::high_resolution_clock::now();
+
         const std::vector<int>& active_indices = update_topk_delta_state(*topk_state, x_quant, in_dim, effective_k);
+
+        if (g_profile_enabled) {
+            g_profile.topk_select_us += micros_since(t_select);
+            g_profile.active_k_sum += static_cast<int64_t>(active_indices.size());
+            g_profile.input_dim_sum += static_cast<int64_t>(in_dim);
+        }
+
+        std::chrono::high_resolution_clock::time_point t_kernel;
+        if (g_profile_enabled) t_kernel = std::chrono::high_resolution_clock::now();
+
         bitlinear_topk_sparse(x_quant, packed_w, in_dim, out_dim, active_indices, out_accum);
+
+        if (g_profile_enabled) {
+            g_profile.sparse_kernel_us += micros_since(t_kernel);
+            g_profile.topk_calls += 1;
+        }
     } else {
+        std::chrono::high_resolution_clock::time_point t_kernel;
+        if (g_profile_enabled) t_kernel = std::chrono::high_resolution_clock::now();
+
         bitlinear_dense_fused(x_quant, packed_w, in_dim, out_dim, out_accum);
+
+        if (g_profile_enabled) {
+            g_profile.dense_kernel_us += micros_since(t_kernel);
+            g_profile.dense_calls += 1;
+            if (requested_sparse) g_profile.topk_fallback_calls += 1;
+        }
     }
+}
+
+void reset_profile_cpp() {
+    g_profile = ProfileStats();
+    g_profile_enabled = true;
+}
+
+void set_profile_enabled_cpp(bool enabled) {
+    g_profile_enabled = enabled;
+}
+
+py::dict get_profile_cpp() {
+    py::dict d;
+    d["dense_calls"] = g_profile.dense_calls;
+    d["topk_calls"] = g_profile.topk_calls;
+    d["topk_fallback_calls"] = g_profile.topk_fallback_calls;
+    d["topk_select_ms"] = static_cast<double>(g_profile.topk_select_us) / 1000.0;
+    d["dense_kernel_ms"] = static_cast<double>(g_profile.dense_kernel_us) / 1000.0;
+    d["sparse_kernel_ms"] = static_cast<double>(g_profile.sparse_kernel_us) / 1000.0;
+    d["avg_active_k"] = g_profile.topk_calls ? static_cast<double>(g_profile.active_k_sum) / static_cast<double>(g_profile.topk_calls) : 0.0;
+    d["avg_input_dim"] = g_profile.topk_calls ? static_cast<double>(g_profile.input_dim_sum) / static_cast<double>(g_profile.topk_calls) : 0.0;
+    d["avg_density"] = g_profile.input_dim_sum ? static_cast<double>(g_profile.active_k_sum) / static_cast<double>(g_profile.input_dim_sum) : 0.0;
+    return d;
 }
 
 void quantize_absmax(int8_t* out_quant, float& out_scale, const float* in, int dim) {
@@ -385,6 +465,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
     std::vector<int64_t> stop_token_ids,
     int64_t top_k_i64,
     bool top_k_is_ratio,
+    double sparse_min_density,
     int64_t architecture_mode,
     int64_t activation_mode,
     double rope_theta,
@@ -405,6 +486,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
     const int num_kv_heads = static_cast<int>(num_kv_heads_i64);
     const int vocab_size = static_cast<int>(vocab_size_i64);
     const int top_k = static_cast<int>(std::max<int64_t>(0, top_k_i64));
+    const float sparse_min_density_f = static_cast<float>(std::min(1.0, std::max(0.0, sparse_min_density)));
     const bool use_mlgru = architecture_mode == 1;
     const bool use_relu2 = activation_mode == 1;
 
@@ -466,13 +548,13 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_x = 1.0f;
             quantize_absmax(hidden_q.data(), scale_x, norm_state.data(), hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 0));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, state_slot(l, 0));
             dequantize(q.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 0], hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 1));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, state_slot(l, 1));
             dequantize(k.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 1], kv_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 2));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, state_slot(l, 2));
             dequantize(v.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 2], kv_dim);
 
             if (use_mlgru) {
@@ -509,7 +591,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_attn = 1.0f;
             rms_norm_weighted(attn_normed.data(), attn_out.data(), attn_sub_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_attn, attn_normed.data(), hidden_dim);
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 3));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, state_slot(l, 3));
 
             const float attn_factor = layer_gammas[w_idx + 3] / std::max(scale_attn, 1e-8f);
             #pragma omp parallel for schedule(static)
@@ -518,12 +600,12 @@ std::vector<int64_t> force_evolved_generate_cpp(
             rms_norm_weighted(ffn_norm_state.data(), hidden_state.data(), ffn_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_x, ffn_norm_state.data(), hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 4));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, state_slot(l, 4));
             dequantize(gate_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 4], inter_dim);
 
             const bool has_up_proj = layer_weights[w_idx + 5].numel() > 0;
             if (has_up_proj) {
-                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 5));
+                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, state_slot(l, 5));
                 dequantize(up_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 5], inter_dim);
             }
 
@@ -547,7 +629,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_ffn = 1.0f;
             rms_norm_weighted(ffn_sub_normed.data(), ffn_act.data(), ffn_sub_norm_w, inter_dim);
             quantize_absmax(hidden_q.data(), scale_ffn, ffn_sub_normed.data(), inter_dim);
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, state_slot(l, 6));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, state_slot(l, 6));
 
             const float down_factor = layer_gammas[w_idx + 6] / std::max(scale_ffn, 1e-8f);
             #pragma omp parallel for schedule(static)
@@ -603,9 +685,9 @@ def get_runtime():
     print("[BUILD] Compiling Leviathan sparse SIMD runtime...")
     try:
         _evolved_engine = load_inline(
-            name="leviathan_phase53_topk_ratio",
+            name="leviathan_phase54_topk_profile",
             cpp_sources=[cpp_source],
-            functions=["force_evolved_generate_cpp"],
+            functions=["force_evolved_generate_cpp", "reset_profile_cpp", "set_profile_enabled_cpp", "get_profile_cpp"],
             extra_cflags=_extension_flags(),
             verbose=False,
         )
@@ -642,6 +724,8 @@ class RestoredBitNet:
         architecture: str = "transformer",
         top_k: float = 0.0,
         prompt_template: str = "auto",
+        profile: bool = False,
+        sparse_min_density: float = 1.0,
     ):
         with open(meta_path, "r", encoding="utf-8") as f:
             self.meta = json.load(f)
@@ -661,6 +745,8 @@ class RestoredBitNet:
             self.top_k = max(0, int(top_k))
             self.top_k_is_ratio = False
         self.prompt_template = prompt_template
+        self.profile = bool(profile)
+        self.sparse_min_density = max(0.0, min(1.0, float(sparse_min_density)))
 
         target_model = self.meta.get("model_name", "microsoft/bitnet-b1.58-2B-4T-bf16")
         try:
@@ -874,6 +960,10 @@ class RestoredBitNet:
 
         start_time = time.perf_counter()
         runtime = get_runtime()
+        if self.profile:
+            runtime.reset_profile_cpp()
+        else:
+            runtime.set_profile_enabled_cpp(False)
         output_tokens = runtime.force_evolved_generate_cpp(
             prompt_tokens,
             max_new_tokens,
@@ -888,6 +978,7 @@ class RestoredBitNet:
             stop_token_ids,
             self.top_k,
             self.top_k_is_ratio,
+            self.sparse_min_density,
             self.architecture_mode,
             self.activation_mode,
             self.rope_theta,
@@ -900,10 +991,14 @@ class RestoredBitNet:
         )
         elapsed = (time.perf_counter() - start_time) * 1000.0
 
+        profile_data = runtime.get_profile_cpp() if self.profile else None
+        if self.profile:
+            runtime.set_profile_enabled_cpp(False)
+
         gen_tokens = output_tokens[len(prompt_tokens) :]
         output_text = self.tokenizer.decode(gen_tokens, skip_special_tokens=True)
         gen_len = max(len(gen_tokens), 1)
-        return output_text, elapsed, gen_len
+        return output_text, elapsed, gen_len, profile_data
 
 
 def main() -> None:
@@ -919,6 +1014,8 @@ def main() -> None:
                              "is treated as a flat absolute K (legacy, harsh on wide layers).")
     parser.add_argument("--architecture", choices=["transformer", "mlgru"], default="transformer")
     parser.add_argument("--prompt-template", choices=["auto", "plain", "qa"], default="auto")
+    parser.add_argument("--profile", action="store_true", help="Print C++ bitlinear timing counters for each prompt.")
+    parser.add_argument("--sparse-min-density", type=float, default=1.0, help="Use sparse Top-K only when effective density is <= this value. Default 1.0 preserves previous behavior; try 0.6 to auto-fallback 0.8/0.9 to dense.")
     args = parser.parse_args()
 
     print("=" * 100)
@@ -931,6 +1028,8 @@ def main() -> None:
         architecture=args.architecture,
         top_k=args.top_k,
         prompt_template=args.prompt_template,
+        profile=args.profile,
+        sparse_min_density=args.sparse_min_density,
     )
     while True:
         try:
@@ -940,9 +1039,23 @@ def main() -> None:
         if not prompt or prompt.lower() in {"/exit", "exit", "quit"}:
             break
 
-        text, elapsed, gen_len = engine.generate(prompt, args.max_new)
+        text, elapsed, gen_len, profile_data = engine.generate(prompt, args.max_new)
         print(f"\nENGINE> {text.strip()}")
         print(f"[Stats: {elapsed:.2f} ms | {gen_len / (max(elapsed / 1000.0, 1e-5)):.2f} tokens/sec]")
+        if profile_data:
+            print(
+                "[Profile: "
+                f"dense_calls={profile_data['dense_calls']} "
+                f"dense_kernel_ms={profile_data['dense_kernel_ms']:.2f} "
+                f"topk_calls={profile_data['topk_calls']} "
+                f"topk_fallback_calls={profile_data['topk_fallback_calls']} "
+                f"topk_select_ms={profile_data['topk_select_ms']:.2f} "
+                f"sparse_kernel_ms={profile_data['sparse_kernel_ms']:.2f} "
+                f"avg_active_k={profile_data['avg_active_k']:.1f} "
+                f"avg_input_dim={profile_data['avg_input_dim']:.1f} "
+                f"avg_density={profile_data['avg_density']:.3f}"
+                "]"
+            )
 
 
 if __name__ == "__main__":

@@ -291,3 +291,30 @@ The expanded prompt set increased the v0.2b QA regression check from 4 prompts t
 
 The remaining failures were concentrated around short paraphrases such as "What does Top-K do?" and one model-package wording. This is treated as a QA coverage limitation, not a runtime failure.
 ```
+
+---
+
+## v0.4 sparse-min-density fallback benchmark
+
+```text
+Model: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b
+Prompt template: qa
+Max new tokens: 80
+Repeats: 3
+Warmup runs per mode: 1
+Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
+Sparse min density: 0.6
+```
+
+| Mode | Setting | Avg latency | Avg tokens/sec | QA pass rate | Notes |
+|---|---:|---:|---:|---:|---|
+| Dense | `--top-k 0` | 56.97 ms | 353.06 tok/s | 54/60 (90.0%) | Dense baseline |
+| Top-K 0.9 | `--top-k 0.9 --sparse-min-density 0.6` | 56.65 ms | 354.60 tok/s | 54/60 (90.0%) | High-density Top-K falls back to dense |
+| Top-K 0.8 | `--top-k 0.8 --sparse-min-density 0.6` | 57.63 ms | 348.18 tok/s | 54/60 (90.0%) | High-density Top-K falls back to dense |
+| Top-K 0.5 | `--top-k 0.5 --sparse-min-density 0.6` | 85.15 ms | 216.90 tok/s | 54/60 (90.0%) | Sparse path remains slower at 30M |
+
+### Interpretation
+
+```text
+The v0.4 fallback benchmark shows that high-density Top-K should not be forced through the sparse path at 30M scale. With --sparse-min-density 0.6, Top-K 0.9 and 0.8 fall back to the dense kernel and preserve the same 90.0% QA keyword-match pass rate as dense. Top-K 0.5 still uses the sparse path but remains slower than dense. This is a runtime guardrail, not a Top-K speedup claim.
+```

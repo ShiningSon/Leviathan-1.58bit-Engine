@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--meta", dest="meta_name", help="Model metadata JSON filename inside --model-dir.")
     parser.add_argument("--python", default=sys.executable, help="Python executable used to run engine.py.")
     parser.add_argument("--timeout", type=int, default=600, help="Seconds before each engine run times out.")
+    parser.add_argument("--sparse-min-density", type=float, default=None, help="Forward engine.py --sparse-min-density. When set, high-density Top-K can auto-fallback to dense.")
     return parser.parse_args()
 
 
@@ -106,6 +107,7 @@ def run_engine(
     mode: str,
     prompts: list[dict[str, Any]],
     timeout: int,
+    sparse_min_density: float | None,
 ) -> dict[str, Any]:
     command = [
         python_exe,
@@ -123,6 +125,8 @@ def run_engine(
         "--prompt-template",
         prompt_template,
     ]
+    if sparse_min_density is not None:
+        command.extend(["--sparse-min-density", str(sparse_min_density)])
     stdin_text = "\n".join(item["prompt"] for item in prompts) + "\nexit\n"
 
     completed = subprocess.run(
@@ -280,6 +284,7 @@ def render_markdown(result: dict[str, Any]) -> str:
         f"- Max new tokens: `{settings['max_new']}`",
         f"- Repeats: `{settings['repeat']}`",
         f"- Warmup runs per mode: `{settings['warmup']}`",
+        f"- Sparse min density: `{settings.get('sparse_min_density') if settings.get('sparse_min_density') is not None else 'not set'}`",
         "",
         "| Mode | Avg latency | Avg tokens/sec | QA pass rate | Notes |",
         "|---|---:|---:|---:|---|",
@@ -377,6 +382,7 @@ def main() -> int:
             "modes": args.modes,
             "repeat": args.repeat,
             "warmup": args.warmup,
+            "sparse_min_density": args.sparse_min_density,
         },
         "paths": {
             "repo_root": str(root),
@@ -413,6 +419,7 @@ def main() -> int:
                 mode=mode,
                 prompts=prompts,
                 timeout=args.timeout,
+                sparse_min_density=args.sparse_min_density,
             )
             runs.append(
                 {

@@ -413,6 +413,8 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 
 ### v0.4: sparse kernel work
 
+- [x] Add Top-K profiling mode.
+- [x] Add sparse-min-density fallback for high-density Top-K.
 - [ ] Reduce Top-K selection overhead.
 - [ ] Add threshold sparsity path.
 - [ ] Avoid full sort where possible.
