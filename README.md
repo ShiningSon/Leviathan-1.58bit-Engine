@@ -10,7 +10,7 @@ The current direction is:
 3. experiment with ratio-based Top-K activation sparsity;
 4. support an experimental attention-free MLGRU runtime path for recurrent checkpoints trained for that path.
 
-> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, but dense remains the recommended speed path at 30M scale. v0.5 adds experimental sparse projection scopes and strict QA guards; down-proj-only Top-K `0.2` matched dense strict-QA pass rate and reduced average latency in one 30M benchmark run, but did not beat dense token throughput.
+> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, but dense remains the recommended speed path at 30M scale. `leviathan_mlgru_30m_instruct_v02g` is the current final proof-model candidate: it restores dense strict QA to 95.0% on the local Leviathan MLGRU QA benchmark. Down-projection-only Top-K preserved strict QA in tested modes, but did not improve measured latency or token throughput.
 
 ---
 
@@ -66,7 +66,7 @@ python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --
 
 `--no-top-k-sort` is experimental. It skips the final index sort after Top-K selection. It can reduce selection overhead, but low-density settings may degrade output quality. It is disabled by default.
 
-`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. In the 30M strict-QA benchmark, down-only Top-K `0.2` matched dense strict-QA pass rate and reduced latency, but did not beat dense token throughput.
+`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. Down-only Top-K preserved strict-QA behavior in tested modes, but the final v02e sparse comparison did not beat dense latency or token throughput.
 
 See [`BENCHMARK.md`](BENCHMARK.md) for the current numbers.
 
@@ -89,6 +89,14 @@ Current proof model:
 - exported to Leviathan v2 format
 - runs locally with `engine.py --architecture mlgru`
 - model package: [ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
+
+Current final instruct proof-model candidate:
+
+- `Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g`
+- local package folder: `leviathan_mlgru_30m_instruct_v02g/`
+- target Hugging Face package: `ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g`
+- dense strict QA: 190/200 keyword-guarded passes, or 95.0%
+- known limitation: one package-description prompt still shows residual TinyStories-style continuation
 
 The proof model is intentionally small. It is meant to validate the full route:
 
@@ -286,6 +294,30 @@ ENGINE> The first proof model was trained on TinyStories.
 
 ---
 
+## Running the v0.2g final proof-model candidate
+
+`Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g` is the current final TinyStories instruct proof-model candidate. It is a small model for validating Leviathan training, export, and local CPU runtime behavior, not a general assistant.
+
+Dense strict QA reached 190/200 passes, or 95.0%, in the local benchmark. Down-only Top-K preserved the same strict QA pass rate in the tested v02e sparse-scope modes, but dense remained faster in measured latency and tokens/sec. No sparse speedup is claimed.
+
+For sparse-scope experiments, `--sparse-scope down --top-k 0.2 --sparse-min-density 0.6 --no-top-k-sort` is the current representative experimental QA-stability candidate. It matched dense strict-QA pass rate in the v02e sparse benchmark, but it is not the default runtime recommendation and did not beat dense token throughput.
+
+Known limitation: the v02g TinyStories proof model retains one package-description failure due to residual story-style continuation.
+
+Recommended dense QA run:
+
+```bash
+python engine.py \
+  --bin leviathan_mlgru_30m_instruct_v02g.bin \
+  --meta leviathan_mlgru_30m_instruct_v02g_meta.json \
+  --architecture mlgru \
+  --top-k 0 \
+  --max-new 80 \
+  --prompt-template qa
+```
+
+---
+
 ## Training the MLGRU proof model on Modal
 
 The training/export route trains a small recurrent model, exports packed ternary linear weights plus FP16 structural tensors, and zips the files for local `engine.py` execution.
@@ -421,7 +453,7 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 - [x] Publish sample outputs and model card for the v0.2b proof model.
 - [ ] Expand QA coverage beyond the small project-specific seed set.
 
-For sparse-scope experiments, `--sparse-scope down --top-k 0.2 --sparse-min-density 0.6 --no-top-k-sort` is the current representative experimental QA-stability candidate. It matched dense strict-QA pass rate and reduced average latency in one 30M run, but it is not the default runtime recommendation and did not beat dense token throughput.
+For sparse-scope experiments, `--sparse-scope down --top-k 0.2 --sparse-min-density 0.6 --no-top-k-sort` is the current representative experimental QA-stability candidate. It preserved strict-QA behavior in the v02e sparse comparison, but it is not the default runtime recommendation and did not beat dense latency or token throughput.
 
 ### v0.3: benchmark automation
 

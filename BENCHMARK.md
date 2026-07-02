@@ -20,6 +20,7 @@ CUDA: not used for local inference benchmark
 Engine commit: 6a05e63ab636
 v0.1 model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories
 v0.2b model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b
+v0.2g model package target: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 ```
 
 Runtime notes:
@@ -376,5 +377,68 @@ Sparse scope: down
 ### Interpretation
 
 ```text
-Down-proj-only Top-K 0.2 matched dense strict-QA pass rate and reduced average latency in this 30M benchmark run. Throughput remained below dense, so this is a quality-stable sparse-scope candidate with a latency-positive signal, not a general sparse speedup. Strict QA guards caught TinyStories contamination using forbidden keywords and max_words.
+This historical v0.5 run showed a latency-positive signal for down-proj-only Top-K 0.2 while matching dense strict-QA pass rate. The later v02e sparse comparison below did not reproduce a latency or throughput improvement over dense, so the current conclusion remains QA preservation only, not sparse speedup. Strict QA guards caught TinyStories contamination using forbidden keywords and max_words.
+```
+
+---
+
+## v0.2g final proof-model candidate strict QA benchmark
+
+`leviathan_mlgru_30m_instruct_v02g` is the current final TinyStories instruct proof-model candidate for the Leviathan MLGRU path. It is still a small proof model for validating training, export, and local CPU runtime behavior; it is not a general assistant.
+
+```text
+Model: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g
+Prompt template: qa
+Max new tokens: 80
+Repeats: 10
+Warmup runs per mode: 1
+Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
+Mode: dense only
+```
+
+| Mode | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
+|---|---:|---:|---:|---|
+| Dense `--top-k 0` | 49.45 ms | 360.50 tok/s | 190/200 (95.0%) | Current v02g dense strict-QA result |
+
+Known limitation:
+
+```text
+The v02g TinyStories proof model retains one package-description failure due to residual story-style continuation. The prompt "What files are inside a Leviathan MLGRU model package?" returns .bin and metadata JSON, but misses tokenizer and adds a story-style "happy" continuation. This affects 1 of 20 strict QA prompts across repeats.
+```
+
+### Interpretation
+
+```text
+v02g restores strict QA to 95.0% on the local Leviathan MLGRU QA benchmark. This is a proof-model result, not a 100% QA claim and not a general-assistant claim.
+```
+
+---
+
+## v0.2e sparse down-only strict QA benchmark
+
+This table records the sparse-scope comparison that preceded v02g. Down-projection-only Top-K preserved strict QA in the tested modes, but dense remained faster in measured latency and tokens/sec. No sparse speedup is claimed.
+
+```text
+Model: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2e
+Prompt template: qa
+Max new tokens: 80
+Repeats: 10
+Warmup runs per mode: 1
+Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
+Sparse min density: 0.6
+No Top-K sort: True
+Sparse scope: down
+```
+
+| Mode | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
+|---|---:|---:|---:|---|
+| Dense `--top-k 0` | 49.23 ms | 359.66 tok/s | 190/200 (95.0%) | v02e dense baseline |
+| Top-K `--top-k 0.18` down-only | 50.42 ms | 355.52 tok/s | 190/200 (95.0%) | Preserved strict QA; slower than dense |
+| Top-K `--top-k 0.20` down-only | 51.23 ms | 349.83 tok/s | 190/200 (95.0%) | Preserved strict QA; slower than dense |
+| Top-K `--top-k 0.25` down-only | 51.64 ms | 350.50 tok/s | 190/200 (95.0%) | Preserved strict QA; slower than dense |
+
+### Interpretation
+
+```text
+Down-only Top-K preserved the tested strict-QA pass rate across 0.18, 0.20, and 0.25. Dense still had the best measured latency and token throughput, so this is a QA-preservation result, not a sparse speedup result.
 ```

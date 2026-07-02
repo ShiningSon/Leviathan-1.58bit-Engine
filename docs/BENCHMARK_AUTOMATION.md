@@ -2,9 +2,9 @@
 
 Leviathan benchmark results should be repeatable enough to compare dense mode with Top-K experiments under the same prompt set and runtime settings. The benchmark runner records the prompts, generated answers, latency, tokens/sec, and simple expected-keyword matching so new results can be reviewed before they are copied into `BENCHMARK.md`.
 
-## v0.2b prompt template
+## v0.2 instruct prompt template
 
-`Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b` must be run with `--prompt-template qa` for project-specific QA prompts.
+`Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b` and later v02 instruct proof-model candidates such as v02g must be run with `--prompt-template qa` for project-specific QA prompts.
 
 Use `--prompt-template plain` only for raw continuation experiments. Plain mode can break the QA matching behavior that v0.2b was trained to demonstrate.
 
@@ -38,6 +38,18 @@ Strict QA sparse-scope example:
 
 ```cmd
 python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02b --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.18 0.2 0.25 --repeat 10 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --out-dir .\benchmark_runs\v05_sparse_scope_down
+```
+
+v02g dense strict QA example:
+
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02g --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 --repeat 10 --out-dir .\benchmark_runs\v02g_dense_strict_qa
+```
+
+v02e down-only sparse-scope comparison example:
+
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02e --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.18 0.2 0.25 --repeat 10 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --out-dir .\benchmark_runs\v02e_sparse_down_strict_qa
 ```
 
 By default, the runner performs one warmup run per mode before the measured repeats. Change this with `--warmup 0` or another integer.
