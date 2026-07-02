@@ -1,0 +1,122 @@
+{"text": "Question: What is Leviathan?\nAnswer: Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"text": "USER: What is Leviathan?\nASSISTANT: Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"text": "Question: What is Leviathan-1.58bit-Engine?\nAnswer: Leviathan-1.58bit-Engine is a research prototype for running native ternary model packages on a local CPU runtime."}
+{"text": "USER: What is Leviathan-1.58bit-Engine?\nASSISTANT: Leviathan-1.58bit-Engine is a research prototype for running native ternary model packages on a local CPU runtime."}
+{"text": "Question: What is MLGRU?\nAnswer: MLGRU is a recurrent model path that updates hidden state step by step instead of using attention maps."}
+{"text": "USER: What is MLGRU?\nASSISTANT: MLGRU is a recurrent model path that updates hidden state step by step instead of using attention maps."}
+{"text": "Question: What is Top-K activation sparsity?\nAnswer: Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"text": "USER: What is Top-K activation sparsity?\nASSISTANT: Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"text": "Question: What does dense mode mean?\nAnswer: Dense mode uses all quantized activations instead of selecting a sparse Top-K subset."}
+{"text": "USER: What does dense mode mean?\nASSISTANT: Dense mode uses all quantized activations instead of selecting a sparse Top-K subset."}
+{"text": "Question: What does --top-k 0 mean?\nAnswer: It means dense mode. Leviathan uses all activations instead of sparse Top-K activation selection."}
+{"text": "USER: What does --top-k 0 mean?\nASSISTANT: It means dense mode. Leviathan uses all activations instead of sparse Top-K activation selection."}
+{"text": "Question: What does --top-k 0.9 mean?\nAnswer: It keeps about 90 percent of each bitlinear input per layer as a ratio-based Top-K setting."}
+{"text": "USER: What does --top-k 0.9 mean?\nASSISTANT: It keeps about 90 percent of each bitlinear input per layer as a ratio-based Top-K setting."}
+{"text": "Question: What does --top-k 0.8 mean?\nAnswer: It keeps about 80 percent of each bitlinear input per layer and skips the smaller activations."}
+{"text": "USER: What does --top-k 0.8 mean?\nASSISTANT: It keeps about 80 percent of each bitlinear input per layer and skips the smaller activations."}
+{"text": "Question: Why is ratio Top-K used?\nAnswer: Ratio Top-K scales K with each layer width, so wide layers are not damaged by a fixed absolute K."}
+{"text": "USER: Why is ratio Top-K used?\nASSISTANT: Ratio Top-K scales K with each layer width, so wide layers are not damaged by a fixed absolute K."}
+{"text": "Question: Why was fixed K risky?\nAnswer: Fixed K can keep enough activations in narrow layers but too few activations in wide layers, causing generation to collapse."}
+{"text": "USER: Why was fixed K risky?\nASSISTANT: Fixed K can keep enough activations in narrow layers but too few activations in wide layers, causing generation to collapse."}
+{"text": "Question: Why is Top-K not faster at 30M scale?\nAnswer: At 30M scale, Top-K selection and sparse memory overhead can be larger than the dense ternary computation."}
+{"text": "USER: Why is Top-K not faster at 30M scale?\nASSISTANT: At 30M scale, Top-K selection and sparse memory overhead can be larger than the dense ternary computation."}
+{"text": "Question: Is this model a general assistant?\nAnswer: No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"text": "USER: Is this model a general assistant?\nASSISTANT: No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"text": "Question: What dataset was the first proof model trained on?\nAnswer: The first proof model was trained on TinyStories."}
+{"text": "USER: What dataset was the first proof model trained on?\nASSISTANT: The first proof model was trained on TinyStories."}
+{"text": "Question: What is the goal of the v0.2 model?\nAnswer: The goal is to mix TinyStories with short Question and Answer examples so the model can follow simple QA format."}
+{"text": "USER: What is the goal of the v0.2 model?\nASSISTANT: The goal is to mix TinyStories with short Question and Answer examples so the model can follow simple QA format."}
+{"text": "Question: What files are inside a Leviathan MLGRU model package?\nAnswer: The package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"text": "USER: What files are inside a Leviathan MLGRU model package?\nASSISTANT: The package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"text": "Question: What is stored in the .bin file?\nAnswer: The .bin file stores packed ternary linear weights and FP16 structural tensors for the Leviathan runtime."}
+{"text": "USER: What is stored in the .bin file?\nASSISTANT: The .bin file stores packed ternary linear weights and FP16 structural tensors for the Leviathan runtime."}
+{"text": "Question: What is stored in the meta JSON file?\nAnswer: The meta JSON file describes tensor names, shapes, offsets, packing format, model configuration, and tokenizer location."}
+{"text": "USER: What is stored in the meta JSON file?\nASSISTANT: The meta JSON file describes tensor names, shapes, offsets, packing format, model configuration, and tokenizer location."}
+{"text": "Question: What is ternary weight?\nAnswer: A ternary weight is a weight represented with three values: negative one, zero, or positive one."}
+{"text": "USER: What is ternary weight?\nASSISTANT: A ternary weight is a weight represented with three values: negative one, zero, or positive one."}
+{"text": "Question: What is 1.58-bit modeling?\nAnswer: It refers to ternary weight representation, where three states carry about log2 of three bits of information."}
+{"text": "USER: What is 1.58-bit modeling?\nASSISTANT: It refers to ternary weight representation, where three states carry about log2 of three bits of information."}
+{"text": "Question: What is fake ternary training?\nAnswer: Fake ternary training simulates ternary weights during training while still updating floating point parameters."}
+{"text": "USER: What is fake ternary training?\nASSISTANT: Fake ternary training simulates ternary weights during training while still updating floating point parameters."}
+{"text": "Question: What is fake int8 activation training?\nAnswer: Fake int8 activation training simulates the quantized activations that the runtime will use during inference."}
+{"text": "USER: What is fake int8 activation training?\nASSISTANT: Fake int8 activation training simulates the quantized activations that the runtime will use during inference."}
+{"text": "Question: Why train with fake quantization?\nAnswer: Fake quantization helps the model adapt to the low precision behavior that the engine will use after export."}
+{"text": "USER: Why train with fake quantization?\nASSISTANT: Fake quantization helps the model adapt to the low precision behavior that the engine will use after export."}
+{"text": "Question: What does Leviathan v2 export mean?\nAnswer: It means the model is exported into the Leviathan binary and metadata format that engine.py can load."}
+{"text": "USER: What does Leviathan v2 export mean?\nASSISTANT: It means the model is exported into the Leviathan binary and metadata format that engine.py can load."}
+{"text": "Question: How do I run the MLGRU proof model?\nAnswer: Run engine.py with the model .bin file, the meta JSON file, --architecture mlgru, and a prompt template."}
+{"text": "USER: How do I run the MLGRU proof model?\nASSISTANT: Run engine.py with the model .bin file, the meta JSON file, --architecture mlgru, and a prompt template."}
+{"text": "Question: What command runs dense MLGRU mode?\nAnswer: Use python engine.py with --architecture mlgru and --top-k 0."}
+{"text": "USER: What command runs dense MLGRU mode?\nASSISTANT: Use python engine.py with --architecture mlgru and --top-k 0."}
+{"text": "Question: What command runs sparse MLGRU mode?\nAnswer: Use python engine.py with --architecture mlgru and a ratio such as --top-k 0.9."}
+{"text": "USER: What command runs sparse MLGRU mode?\nASSISTANT: Use python engine.py with --architecture mlgru and a ratio such as --top-k 0.9."}
+{"text": "Question: What prompt should I test first?\nAnswer: A simple first prompt is Once upon a time, because the proof model was trained on TinyStories."}
+{"text": "USER: What prompt should I test first?\nASSISTANT: A simple first prompt is Once upon a time, because the proof model was trained on TinyStories."}
+{"text": "Question: Why does the model produce story-like text?\nAnswer: It produces story-like text because TinyStories is the main training dataset."}
+{"text": "USER: Why does the model produce story-like text?\nASSISTANT: It produces story-like text because TinyStories is the main training dataset."}
+{"text": "Question: Can this model answer broad factual questions?\nAnswer: Not reliably. It is a small proof model and not a broad knowledge assistant."}
+{"text": "USER: Can this model answer broad factual questions?\nASSISTANT: Not reliably. It is a small proof model and not a broad knowledge assistant."}
+{"text": "Question: What is the current best mode for the 30M model?\nAnswer: Dense MLGRU mode is currently the best mode for speed and coherence at 30M scale."}
+{"text": "USER: What is the current best mode for the 30M model?\nASSISTANT: Dense MLGRU mode is currently the best mode for speed and coherence at 30M scale."}
+{"text": "Question: What is the purpose of BENCHMARK.md?\nAnswer: BENCHMARK.md records measured speed, sample outputs, limitations, and the next optimization targets."}
+{"text": "USER: What is the purpose of BENCHMARK.md?\nASSISTANT: BENCHMARK.md records measured speed, sample outputs, limitations, and the next optimization targets."}
+{"text": "Question: What is the purpose of the training script?\nAnswer: The training script trains a small MLGRU model on Modal and exports a Leviathan-compatible package."}
+{"text": "USER: What is the purpose of the training script?\nASSISTANT: The training script trains a small MLGRU model on Modal and exports a Leviathan-compatible package."}
+{"text": "Question: What GPU is used for the v0.2 training script?\nAnswer: The v0.2 training script is designed to use a Modal T4 GPU."}
+{"text": "USER: What GPU is used for the v0.2 training script?\nASSISTANT: The v0.2 training script is designed to use a Modal T4 GPU."}
+{"text": "Question: Why use T4 instead of A100 for this proof model?\nAnswer: The recurrent training loop did not benefit enough from A100, so T4 was more cost efficient in testing."}
+{"text": "USER: Why use T4 instead of A100 for this proof model?\nASSISTANT: The recurrent training loop did not benefit enough from A100, so T4 was more cost efficient in testing."}
+{"text": "Question: What is the next scaling target?\nAnswer: The next scaling target is a larger 70M to 100M model after the 30M proof route is stable."}
+{"text": "USER: What is the next scaling target?\nASSISTANT: The next scaling target is a larger 70M to 100M model after the 30M proof route is stable."}
+{"text": "Question: What is the sparse kernel target?\nAnswer: The sparse kernel target is to reduce selection overhead and make sparse activation execution faster on larger models."}
+{"text": "USER: What is the sparse kernel target?\nASSISTANT: The sparse kernel target is to reduce selection overhead and make sparse activation execution faster on larger models."}
+{"text": "Question: What is threshold sparsity?\nAnswer: Threshold sparsity keeps activations above a threshold instead of performing an exact Top-K selection."}
+{"text": "USER: What is threshold sparsity?\nASSISTANT: Threshold sparsity keeps activations above a threshold instead of performing an exact Top-K selection."}
+{"text": "Question: Why might threshold sparsity be useful?\nAnswer: It may reduce sorting and selection overhead compared with exact Top-K."}
+{"text": "USER: Why might threshold sparsity be useful?\nASSISTANT: It may reduce sorting and selection overhead compared with exact Top-K."}
+{"text": "Question: What is the immediate project goal?\nAnswer: The immediate goal is a reproducible route from training to ternary CPU inference, then responsible scaling."}
+{"text": "USER: What is the immediate project goal?\nASSISTANT: The immediate goal is a reproducible route from training to ternary CPU inference, then responsible scaling."}
+{"text": "Question: What should the project not claim yet?\nAnswer: It should not claim major Top-K speedups at 30M scale or general assistant quality."}
+{"text": "USER: What should the project not claim yet?\nASSISTANT: It should not claim major Top-K speedups at 30M scale or general assistant quality."}
+{"text": "Question: What did v0.1 prove?\nAnswer: It proved that a 30M MLGRU model can be trained, exported to Leviathan v2, and run locally through engine.py."}
+{"text": "USER: What did v0.1 prove?\nASSISTANT: It proved that a 30M MLGRU model can be trained, exported to Leviathan v2, and run locally through engine.py."}
+{"text": "Question: What should v0.2 prove?\nAnswer: It should prove that the same route can learn simple QA formatting while preserving story continuation behavior."}
+{"text": "USER: What should v0.2 prove?\nASSISTANT: It should prove that the same route can learn simple QA formatting while preserving story continuation behavior."}
+{"text": "Question: What is a model card?\nAnswer: A model card is a README for a model repository that explains the model, files, usage, limitations, and benchmark results."}
+{"text": "USER: What is a model card?\nASSISTANT: A model card is a README for a model repository that explains the model, files, usage, limitations, and benchmark results."}
+{"text": "Question: Where should model files be uploaded?\nAnswer: Model files should be uploaded to Hugging Face or a release asset, not committed directly to the GitHub main branch."}
+{"text": "USER: Where should model files be uploaded?\nASSISTANT: Model files should be uploaded to Hugging Face or a release asset, not committed directly to the GitHub main branch."}
+{"text": "Question: Where should source code be uploaded?\nAnswer: Source code, README files, benchmark files, and training scripts belong in the GitHub repository."}
+{"text": "USER: Where should source code be uploaded?\nASSISTANT: Source code, README files, benchmark files, and training scripts belong in the GitHub repository."}
+{"text": "Question: Why keep model binaries out of GitHub history?\nAnswer: Large binary files make the repository harder to clone, review, and maintain."}
+{"text": "USER: Why keep model binaries out of GitHub history?\nASSISTANT: Large binary files make the repository harder to clone, review, and maintain."}
+{"text": "Question: What does CPU-resident inference mean?\nAnswer: It means the model weights are loaded and executed on the local CPU runtime instead of depending on a GPU."}
+{"text": "USER: What does CPU-resident inference mean?\nASSISTANT: It means the model weights are loaded and executed on the local CPU runtime instead of depending on a GPU."}
+{"text": "Question: What does SIMD bitlinear execution mean?\nAnswer: It means the runtime uses CPU vector instructions to accelerate low precision linear projection work."}
+{"text": "USER: What does SIMD bitlinear execution mean?\nASSISTANT: It means the runtime uses CPU vector instructions to accelerate low precision linear projection work."}
+{"text": "Question: What is a recurrent runtime path?\nAnswer: A recurrent runtime path updates state step by step and avoids computing a full attention score matrix."}
+{"text": "USER: What is a recurrent runtime path?\nASSISTANT: A recurrent runtime path updates state step by step and avoids computing a full attention score matrix."}
+{"text": "Question: Why avoid attention maps?\nAnswer: Avoiding attention maps can reduce memory and compute patterns for compatible recurrent models."}
+{"text": "USER: Why avoid attention maps?\nASSISTANT: Avoiding attention maps can reduce memory and compute patterns for compatible recurrent models."}
+{"text": "Question: Can transformer checkpoints run in MLGRU mode?\nAnswer: Existing transformer checkpoints are not expected to work correctly in MLGRU mode without compatible training."}
+{"text": "USER: Can transformer checkpoints run in MLGRU mode?\nASSISTANT: Existing transformer checkpoints are not expected to work correctly in MLGRU mode without compatible training."}
+{"text": "Question: Why does MLGRU need its own checkpoint?\nAnswer: MLGRU has a different recurrent computation path, so the weights need to be trained for that path."}
+{"text": "USER: Why does MLGRU need its own checkpoint?\nASSISTANT: MLGRU has a different recurrent computation path, so the weights need to be trained for that path."}
+{"text": "Question: What is the safest first test after training?\nAnswer: Run dense mode first with --top-k 0, then compare ratio Top-K settings later."}
+{"text": "USER: What is the safest first test after training?\nASSISTANT: Run dense mode first with --top-k 0, then compare ratio Top-K settings later."}
+{"text": "Question: What is the first sign that v0.2 worked?\nAnswer: The first sign is that the model follows Question and Answer formatting for simple project-related prompts."}
+{"text": "USER: What is the first sign that v0.2 worked?\nASSISTANT: The first sign is that the model follows Question and Answer formatting for simple project-related prompts."}
+{"text": "Question: What should I do if output is random?\nAnswer: Check dense mode first, verify the correct .bin and meta files, and confirm the tokenizer folder is present."}
+{"text": "USER: What should I do if output is random?\nASSISTANT: Check dense mode first, verify the correct .bin and meta files, and confirm the tokenizer folder is present."}
+{"text": "Question: What should I do if Top-K output collapses?\nAnswer: Use dense mode as the baseline and test less aggressive ratios such as 0.9 before trying lower ratios."}
+{"text": "USER: What should I do if Top-K output collapses?\nASSISTANT: Use dense mode as the baseline and test less aggressive ratios such as 0.9 before trying lower ratios."}
+{"text": "Question: What should I do if Modal training is too slow?\nAnswer: Run shorter 1000 step experiments and compare results before spending time on longer runs."}
+{"text": "USER: What should I do if Modal training is too slow?\nASSISTANT: Run shorter 1000 step experiments and compare results before spending time on longer runs."}
+{"text": "Question: What should I do before publishing a benchmark?\nAnswer: Record the CPU, OS, Python version, PyTorch version, compiler, engine commit, command, prompt, and sample output."}
+{"text": "USER: What should I do before publishing a benchmark?\nASSISTANT: Record the CPU, OS, Python version, PyTorch version, compiler, engine commit, command, prompt, and sample output."}
+{"text": "Question: What is the honest conclusion for 30M Top-K?\nAnswer: The honest conclusion is that ratio Top-K preserves readable text but is not yet a speed win at 30M scale."}
+{"text": "USER: What is the honest conclusion for 30M Top-K?\nASSISTANT: The honest conclusion is that ratio Top-K preserves readable text but is not yet a speed win at 30M scale."}
+{"text": "Question: What is the honest conclusion for 30M MLGRU?\nAnswer: The honest conclusion is that the MLGRU training, export, and CPU runtime path works as a proof model."}
+{"text": "USER: What is the honest conclusion for 30M MLGRU?\nASSISTANT: The honest conclusion is that the MLGRU training, export, and CPU runtime path works as a proof model."}
+{"text": "Question: What is the next GitHub milestone?\nAnswer: The next milestone is an instruction-mix v0.2 model and repeatable benchmark automation."}
+{"text": "USER: What is the next GitHub milestone?\nASSISTANT: The next milestone is an instruction-mix v0.2 model and repeatable benchmark automation."}
