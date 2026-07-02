@@ -207,13 +207,12 @@ Measure whether Top-K begins to catch up or beat dense when dense matvec work be
 
 ### v0.5: Sparse kernel optimization
 
-Potential changes:
+Current follow-up:
 
-- Threshold sparsity mode.
-- Avoid full sort after Top-K selection.
-- Cache active sets more aggressively.
-- Explore block-sparse activation scheduling.
-- Add AVX-512 / NEON specialized sparse paths.
+- Threshold sparsity and naive block Top-K were negative experiments and should not be included in the active runtime path.
+- Continue with projection-scoped sparsity, especially down-proj-only.
+- Improve sparse kernel throughput and Top-K selection overhead.
+- Retest on 70M/100M models.
 
 ---
 

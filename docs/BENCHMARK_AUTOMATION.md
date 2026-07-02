@@ -20,57 +20,24 @@ The strict QA prompt schema supports `expected`, `forbidden`, and `max_words`. R
 
 For sparse-scope checks, use `--sparse-scope down` to restrict Top-K sparsity to the down projection while keeping recurrent/state projections dense.
 
-## Example
+## CMD examples
 
 From the repository root:
 
-```powershell
-python scripts/benchmark_engine.py `
-  --model-dir .\leviathan_mlgru_30m_instruct_v02b `
-  --engine .\engine.py `
-  --prompts .\benchmarks\prompts_v02b_qa.json `
-  --architecture mlgru `
-  --prompt-template qa `
-  --max-new 80 `
-  --modes 0 0.9 0.8 0.5 `
-  --repeat 3 `
-  --sparse-min-density 0.6 `
-  --out-dir .\benchmark_runs\v04_sparse_fallback
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02b --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.9 0.8 0.5 --repeat 3 --sparse-min-density 0.6 --out-dir .\benchmark_runs\v04_sparse_fallback
 ```
 
 No-sort experiment example:
 
-```powershell
-python scripts/benchmark_engine.py `
-  --model-dir .\leviathan_mlgru_30m_instruct_v02b `
-  --engine .\engine.py `
-  --prompts .\benchmarks\prompts_v02b_qa.json `
-  --architecture mlgru `
-  --prompt-template qa `
-  --max-new 80 `
-  --modes 0 0.5 0.3 `
-  --repeat 3 `
-  --sparse-min-density 0.6 `
-  --no-top-k-sort `
-  --out-dir .\benchmark_runs\v04_topk_nosort
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02b --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.5 0.3 --repeat 3 --sparse-min-density 0.6 --no-top-k-sort --out-dir .\benchmark_runs\v04_topk_nosort
 ```
 
 Strict QA sparse-scope example:
 
-```powershell
-python scripts/benchmark_engine.py `
-  --model-dir .\leviathan_mlgru_30m_instruct_v02b `
-  --engine .\engine.py `
-  --prompts .\benchmarks\prompts_v02b_qa.json `
-  --architecture mlgru `
-  --prompt-template qa `
-  --max-new 80 `
-  --modes 0 0.18 0.2 0.25 `
-  --repeat 10 `
-  --sparse-min-density 0.6 `
-  --no-top-k-sort `
-  --sparse-scope down `
-  --out-dir .\benchmark_runs\v05_sparse_scope_down
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02b --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.18 0.2 0.25 --repeat 10 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --out-dir .\benchmark_runs\v05_sparse_scope_down
 ```
 
 By default, the runner performs one warmup run per mode before the measured repeats. Change this with `--warmup 0` or another integer.

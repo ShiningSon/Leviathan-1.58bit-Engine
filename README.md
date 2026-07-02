@@ -10,7 +10,7 @@ The current direction is:
 3. experiment with ratio-based Top-K activation sparsity;
 4. support an experimental attention-free MLGRU runtime path for recurrent checkpoints trained for that path.
 
-> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented and preserves tested QA behavior in the 30M proof model, but sparse Top-K is not yet faster at this scale because selection and sparse-kernel overhead dominate. v0.4 adds an optional sparse-min-density fallback so high-density Top-K can fall back to dense kernels as a runtime guardrail.
+> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, but dense remains the recommended speed path at 30M scale. v0.5 adds experimental sparse projection scopes and strict QA guards; down-proj-only Top-K `0.2` matched dense strict-QA pass rate and reduced average latency in one 30M benchmark run, but did not beat dense token throughput.
 
 ---
 
@@ -420,6 +420,8 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 - [x] Improve short project-specific QA behavior with `--prompt-template qa`.
 - [x] Publish sample outputs and model card for the v0.2b proof model.
 - [ ] Expand QA coverage beyond the small project-specific seed set.
+
+For sparse-scope experiments, `--sparse-scope down --top-k 0.2 --sparse-min-density 0.6 --no-top-k-sort` is the current representative experimental QA-stability candidate. It matched dense strict-QA pass rate and reduced average latency in one 30M run, but it is not the default runtime recommendation and did not beat dense token throughput.
 
 ### v0.3: benchmark automation
 

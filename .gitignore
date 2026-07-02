@@ -26,6 +26,10 @@ exports/
 .env
 .env.*
 *.log
+*.bak_v04_*
+*.bak_v05_*
+patch_v04_*.py
+patch_v05_*.py
 
 # Local model packages are uploaded to Hugging Face, not committed to main.
 /leviathan_mlgru_30m_instruct_v02/
