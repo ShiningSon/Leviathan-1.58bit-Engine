@@ -1,0 +1,226 @@
+{"prompt": "Question: What is Leviathan?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: What is Leviathan?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: Define Leviathan.\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: Define Leviathan.\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What does Leviathan do?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: What does Leviathan do?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is the Leviathan engine?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: What is the Leviathan engine?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is Leviathan-1.58bit-Engine?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: What is Leviathan-1.58bit-Engine?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What kind of project is Leviathan?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: What kind of project is Leviathan?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is this engine called?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: What is this engine called?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is the purpose of Leviathan?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: What is the purpose of Leviathan?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: Describe Leviathan briefly.\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: Describe Leviathan briefly.\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: Is Leviathan a CPU inference engine?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: Is Leviathan a CPU inference engine?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is MLGRU?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: What is MLGRU?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: Define MLGRU.\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: Define MLGRU.\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: What does MLGRU do?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: What does MLGRU do?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: How does MLGRU work?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: How does MLGRU work?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: What is the MLGRU runtime path?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: What is the MLGRU runtime path?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: How is MLGRU different from attention?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: How is MLGRU different from attention?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: Does MLGRU use attention maps?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: Does MLGRU use attention maps?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: What does the recurrent path do?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: What does the recurrent path do?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: Describe MLGRU briefly.\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: Describe MLGRU briefly.\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: Why does MLGRU need its own checkpoint?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: Why does MLGRU need its own checkpoint?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: What is Top-K activation sparsity?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What is Top-K activation sparsity?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: Define Top-K activation sparsity.\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: Define Top-K activation sparsity.\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What does Top-K do?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What does Top-K do?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What does Top-K keep?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What does Top-K keep?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What does activation sparsity mean here?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What does activation sparsity mean here?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: How does Top-K reduce computation?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: How does Top-K reduce computation?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What is ratio Top-K?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What is ratio Top-K?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What does --top-k 0.9 mean?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What does --top-k 0.9 mean?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What does sparse activation selection do?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What does sparse activation selection do?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: Describe Top-K briefly.\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: Describe Top-K briefly.\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What is dense mode?\nAnswer:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "USER: What is dense mode?\nASSISTANT:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "Question: What does --top-k 0 mean?\nAnswer:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "USER: What does --top-k 0 mean?\nASSISTANT:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "Question: Which mode uses all activations?\nAnswer:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "USER: Which mode uses all activations?\nASSISTANT:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "Question: How do I run dense MLGRU mode?\nAnswer:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "USER: How do I run dense MLGRU mode?\nASSISTANT:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "Question: What is the fastest current mode for the 30M model?\nAnswer:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "USER: What is the fastest current mode for the 30M model?\nASSISTANT:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "Question: What mode should be tested first?\nAnswer:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "USER: What mode should be tested first?\nASSISTANT:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "Question: What dataset was this proof model trained on?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "USER: What dataset was this proof model trained on?\nASSISTANT:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: What dataset was the first proof model trained on?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "USER: What dataset was the first proof model trained on?\nASSISTANT:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: Was the proof model trained on TinyStories?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "USER: Was the proof model trained on TinyStories?\nASSISTANT:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: Why does the model produce story-like text?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "USER: Why does the model produce story-like text?\nASSISTANT:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: What data was used for v0.1?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "USER: What data was used for v0.1?\nASSISTANT:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: What is the main dataset for the proof model?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "USER: What is the main dataset for the proof model?\nASSISTANT:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: Is this model a general assistant?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "USER: Is this model a general assistant?\nASSISTANT:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: Can this model answer broad factual questions?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "USER: Can this model answer broad factual questions?\nASSISTANT:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: Is the 30M proof model a production assistant?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "USER: Is the 30M proof model a production assistant?\nASSISTANT:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: Should this model be treated as a finished chatbot?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "USER: Should this model be treated as a finished chatbot?\nASSISTANT:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: What is the limitation of this proof model?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "USER: What is the limitation of this proof model?\nASSISTANT:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: Is this model mainly a runtime proof?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "USER: Is this model mainly a runtime proof?\nASSISTANT:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: What files are inside a Leviathan MLGRU model package?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "USER: What files are inside a Leviathan MLGRU model package?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "Question: What is included in the model package?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "USER: What is included in the model package?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "Question: What files do I need to run the model?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "USER: What files do I need to run the model?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "Question: What should be uploaded to Hugging Face?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "USER: What should be uploaded to Hugging Face?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "Question: What does the exported package contain?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "USER: What does the exported package contain?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, a tokenizer folder, a report, and sample outputs."}
+{"prompt": "Question: Where should source code be uploaded?\nAnswer:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "USER: Where should source code be uploaded?\nASSISTANT:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "Question: Where should model files be uploaded?\nAnswer:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "USER: Where should model files be uploaded?\nASSISTANT:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "Question: Should model binaries be committed to GitHub?\nAnswer:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "USER: Should model binaries be committed to GitHub?\nASSISTANT:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "Question: Why keep model binaries out of GitHub history?\nAnswer:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "USER: Why keep model binaries out of GitHub history?\nASSISTANT:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "Question: Where should the .bin model file go?\nAnswer:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "USER: Where should the .bin model file go?\nASSISTANT:", "answer": "Source code and benchmarks belong on GitHub, while model files belong on Hugging Face."}
+{"prompt": "Question: What is Leviathan?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is Leviathan?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is Leviathan?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is Leviathan?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What is MLGRU?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: What is MLGRU?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: What is MLGRU?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: What is MLGRU?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: What is Top-K activation sparsity?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What is Top-K activation sparsity?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What is Top-K activation sparsity?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What is Top-K activation sparsity?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What dataset was this proof model trained on?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: What dataset was this proof model trained on?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: What dataset was this proof model trained on?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: What dataset was this proof model trained on?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: Is this model a general assistant?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: Is this model a general assistant?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: Is this model a general assistant?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: Is this model a general assistant?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: What is Leviathan?\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: What is Leviathan?\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: Define Leviathan briefly.\nAnswer:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "USER: Define Leviathan briefly.\nASSISTANT:", "answer": "Leviathan is an experimental CPU inference engine for ternary and recurrent language models."}
+{"prompt": "Question: What does Leviathan do?\nAnswer:", "answer": "Leviathan runs ternary and recurrent language models on local CPU inference paths."}
+{"prompt": "USER: What does Leviathan do?\nASSISTANT:", "answer": "Leviathan runs ternary and recurrent language models on local CPU inference paths."}
+{"prompt": "Question: What is MLGRU?\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: What is MLGRU?\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: Define MLGRU.\nAnswer:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "USER: Define MLGRU.\nASSISTANT:", "answer": "MLGRU is a recurrent runtime path that updates state step by step instead of computing attention maps."}
+{"prompt": "Question: How does MLGRU differ from attention?\nAnswer:", "answer": "MLGRU updates recurrent state step by step instead of computing attention maps."}
+{"prompt": "USER: How does MLGRU differ from attention?\nASSISTANT:", "answer": "MLGRU updates recurrent state step by step instead of computing attention maps."}
+{"prompt": "Question: What dataset was this proof model trained on?\nAnswer:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "USER: What dataset was this proof model trained on?\nASSISTANT:", "answer": "The first proof model was trained on TinyStories."}
+{"prompt": "Question: Was the proof model trained on TinyStories?\nAnswer:", "answer": "Yes. The first proof model was trained on TinyStories."}
+{"prompt": "USER: Was the proof model trained on TinyStories?\nASSISTANT:", "answer": "Yes. The first proof model was trained on TinyStories."}
+{"prompt": "Question: Is this model a general assistant?\nAnswer:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "USER: Is this model a general assistant?\nASSISTANT:", "answer": "No. This is a small proof model for testing the Leviathan training, export, and CPU runtime path."}
+{"prompt": "Question: What is the limitation of this proof model?\nAnswer:", "answer": "It is a small proof model, not a general assistant."}
+{"prompt": "USER: What is the limitation of this proof model?\nASSISTANT:", "answer": "It is a small proof model, not a general assistant."}
+{"prompt": "Question: What is Top-K activation sparsity?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What is Top-K activation sparsity?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What does Top-K do?\nAnswer:", "answer": "Top-K keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What does Top-K do?\nASSISTANT:", "answer": "Top-K keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: How does Top-K reduce computation?\nAnswer:", "answer": "Top-K reduces computation by using the largest activations and skipping smaller activations."}
+{"prompt": "USER: How does Top-K reduce computation?\nASSISTANT:", "answer": "Top-K reduces computation by using the largest activations and skipping smaller activations."}
+{"prompt": "Question: What is Top-K used for?\nAnswer:", "answer": "Top-K is used to reduce computation by keeping only the largest activations."}
+{"prompt": "USER: What is Top-K used for?\nASSISTANT:", "answer": "Top-K is used to reduce computation by keeping only the largest activations."}
+{"prompt": "Question: What does Top-K keep?\nAnswer:", "answer": "Top-K keeps the largest activations."}
+{"prompt": "USER: What does Top-K keep?\nASSISTANT:", "answer": "Top-K keeps the largest activations."}
+{"prompt": "Question: What does Top-K skip?\nAnswer:", "answer": "Top-K skips smaller activations."}
+{"prompt": "USER: What does Top-K skip?\nASSISTANT:", "answer": "Top-K skips smaller activations."}
+{"prompt": "Question: What are Top-K activations?\nAnswer:", "answer": "Top-K activations are the largest activation values kept for sparse computation."}
+{"prompt": "USER: What are Top-K activations?\nASSISTANT:", "answer": "Top-K activations are the largest activation values kept for sparse computation."}
+{"prompt": "Question: Does Top-K keep every activation?\nAnswer:", "answer": "No. Top-K keeps the largest activations and skips smaller activations."}
+{"prompt": "USER: Does Top-K keep every activation?\nASSISTANT:", "answer": "No. Top-K keeps the largest activations and skips smaller activations."}
+{"prompt": "Question: Does Top-K define Leviathan?\nAnswer:", "answer": "No. Top-K describes activation sparsity, not the whole Leviathan project."}
+{"prompt": "USER: Does Top-K define Leviathan?\nASSISTANT:", "answer": "No. Top-K describes activation sparsity, not the whole Leviathan project."}
+{"prompt": "Question: What is dense mode?\nAnswer:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "USER: What is dense mode?\nASSISTANT:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "Question: What does --top-k 0 mean?\nAnswer:", "answer": "--top-k 0 disables activation sparsity and uses all activations."}
+{"prompt": "USER: What does --top-k 0 mean?\nASSISTANT:", "answer": "--top-k 0 disables activation sparsity and uses all activations."}
+{"prompt": "Question: Which mode uses all activations?\nAnswer:", "answer": "Dense mode uses all activations."}
+{"prompt": "USER: Which mode uses all activations?\nASSISTANT:", "answer": "Dense mode uses all activations."}
+{"prompt": "Question: Does dense mode skip activations?\nAnswer:", "answer": "No. Dense mode uses all activations."}
+{"prompt": "USER: Does dense mode skip activations?\nASSISTANT:", "answer": "No. Dense mode uses all activations."}
+{"prompt": "Question: When should dense mode be used?\nAnswer:", "answer": "Dense mode should be used as the default speed baseline at 30M scale."}
+{"prompt": "USER: When should dense mode be used?\nASSISTANT:", "answer": "Dense mode should be used as the default speed baseline at 30M scale."}
+{"prompt": "Question: What files are inside a Leviathan MLGRU model package?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What files are inside a Leviathan MLGRU model package?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: What files do I need to run the model?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What files do I need to run the model?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: Which files are required for local inference?\nAnswer:", "answer": "Local inference needs a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: Which files are required for local inference?\nASSISTANT:", "answer": "Local inference needs a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: What does the model package contain?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What does the model package contain?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: Does the package need a tokenizer folder?\nAnswer:", "answer": "Yes. The model package needs a tokenizer folder with the .bin and metadata JSON files."}
+{"prompt": "USER: Does the package need a tokenizer folder?\nASSISTANT:", "answer": "Yes. The model package needs a tokenizer folder with the .bin and metadata JSON files."}
+{"prompt": "Question: What are the required Leviathan model package files?\nAnswer:", "answer": "The required files are a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What are the required Leviathan model package files?\nASSISTANT:", "answer": "The required files are a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: Where is the tokenizer stored?\nAnswer:", "answer": "The tokenizer is stored in the tokenizer folder."}
+{"prompt": "USER: Where is the tokenizer stored?\nASSISTANT:", "answer": "The tokenizer is stored in the tokenizer folder."}
+{"prompt": "Question: Where should source code be uploaded?\nAnswer:", "answer": "Source code and benchmarks belong on GitHub."}
+{"prompt": "USER: Where should source code be uploaded?\nASSISTANT:", "answer": "Source code and benchmarks belong on GitHub."}
+{"prompt": "Question: Where should model files be uploaded?\nAnswer:", "answer": "Model files belong on Hugging Face."}
+{"prompt": "USER: Where should model files be uploaded?\nASSISTANT:", "answer": "Model files belong on Hugging Face."}
+{"prompt": "Question: What belongs on GitHub?\nAnswer:", "answer": "Source code, benchmarks, and documentation belong on GitHub."}
+{"prompt": "USER: What belongs on GitHub?\nASSISTANT:", "answer": "Source code, benchmarks, and documentation belong on GitHub."}
+{"prompt": "Question: What belongs on Hugging Face?\nAnswer:", "answer": "Model files, tokenizer files, metadata, and model cards belong on Hugging Face."}
+{"prompt": "USER: What belongs on Hugging Face?\nASSISTANT:", "answer": "Model files, tokenizer files, metadata, and model cards belong on Hugging Face."}
+{"prompt": "Question: Should large model binaries be committed to GitHub?\nAnswer:", "answer": "No. Large model binaries should be uploaded to Hugging Face."}
+{"prompt": "USER: Should large model binaries be committed to GitHub?\nASSISTANT:", "answer": "No. Large model binaries should be uploaded to Hugging Face."}
+{"prompt": "Question: What does --sparse-scope down do?\nAnswer:", "answer": "--sparse-scope down applies Top-K only to the down projection."}
+{"prompt": "USER: What does --sparse-scope down do?\nASSISTANT:", "answer": "--sparse-scope down applies Top-K only to the down projection."}
+{"prompt": "Question: Which projection is sparse in down-only mode?\nAnswer:", "answer": "Only the down projection is sparse in down-only mode."}
+{"prompt": "USER: Which projection is sparse in down-only mode?\nASSISTANT:", "answer": "Only the down projection is sparse in down-only mode."}
+{"prompt": "Question: Why keep recurrent projections dense?\nAnswer:", "answer": "Recurrent and state projections stay dense to preserve QA stability."}
+{"prompt": "USER: Why keep recurrent projections dense?\nASSISTANT:", "answer": "Recurrent and state projections stay dense to preserve QA stability."}
+{"prompt": "Question: What is the current sparse-scope candidate?\nAnswer:", "answer": "Down-only Top-K 0.2 is a quality-stable experimental candidate."}
+{"prompt": "USER: What is the current sparse-scope candidate?\nASSISTANT:", "answer": "Down-only Top-K 0.2 is a quality-stable experimental candidate."}
+{"prompt": "Question: Is down-only sparse mode a general speedup?\nAnswer:", "answer": "No. Down-only sparse mode is an experimental candidate, not a general speedup."}
+{"prompt": "USER: Is down-only sparse mode a general speedup?\nASSISTANT:", "answer": "No. Down-only sparse mode is an experimental candidate, not a general speedup."}
+{"prompt": "Question: What does --no-top-k-sort do?\nAnswer:", "answer": "--no-top-k-sort skips the final active-index sort after Top-K selection."}
+{"prompt": "USER: What does --no-top-k-sort do?\nASSISTANT:", "answer": "--no-top-k-sort skips the final active-index sort after Top-K selection."}
+{"prompt": "Question: Is no-sort Top-K experimental?\nAnswer:", "answer": "Yes. No-sort Top-K is experimental."}
+{"prompt": "USER: Is no-sort Top-K experimental?\nASSISTANT:", "answer": "Yes. No-sort Top-K is experimental."}
+{"prompt": "Question: What does --sparse-min-density do?\nAnswer:", "answer": "--sparse-min-density uses sparse Top-K only when density is low enough."}
+{"prompt": "USER: What does --sparse-min-density do?\nASSISTANT:", "answer": "--sparse-min-density uses sparse Top-K only when density is low enough."}
+{"prompt": "Question: Is sparse-min-density a speedup claim?\nAnswer:", "answer": "No. Sparse-min-density is a runtime guardrail, not a speedup claim."}
+{"prompt": "USER: Is sparse-min-density a speedup claim?\nASSISTANT:", "answer": "No. Sparse-min-density is a runtime guardrail, not a speedup claim."}
