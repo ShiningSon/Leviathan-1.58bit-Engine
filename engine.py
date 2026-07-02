@@ -232,6 +232,18 @@ void bitlinear_topk_sparse(
     }
 }
 
+
+static inline bool projection_allows_sparse(int sparse_scope, int projection_slot) {
+    // 0 = all projections
+    // 1 = FFN projections only: gate/up/down
+    // 2 = down projection only
+    // 3 = none
+    if (sparse_scope == 0) return true;
+    if (sparse_scope == 1) return projection_slot >= 4 && projection_slot <= 6;
+    if (sparse_scope == 2) return projection_slot == 6;
+    return false;
+}
+
 void bitlinear_dispatch(
     const int8_t* x_quant,
     const uint8_t* packed_w,
@@ -242,6 +254,7 @@ void bitlinear_dispatch(
     bool top_k_is_ratio,
     float sparse_min_density,
     bool sort_topk,
+    bool allow_sparse,
     TopKDeltaState* topk_state
 ) {
     // Resolve the effective K for THIS layer. When --top-k is given as a ratio
@@ -258,7 +271,7 @@ void bitlinear_dispatch(
     const float effective_density = in_dim > 0
         ? static_cast<float>(effective_k) / static_cast<float>(in_dim)
         : 1.0f;
-    const bool requested_sparse = effective_k > 0 && effective_k < in_dim && topk_state != nullptr;
+    const bool requested_sparse = allow_sparse && effective_k > 0 && effective_k < in_dim && topk_state != nullptr;
     const bool use_sparse = requested_sparse && effective_density <= sparse_min_density;
 
     if (use_sparse) {
@@ -473,6 +486,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
     bool top_k_is_ratio,
     double sparse_min_density,
     bool sort_topk,
+    int64_t sparse_scope_i64,
     int64_t architecture_mode,
     int64_t activation_mode,
     double rope_theta,
@@ -494,6 +508,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
     const int vocab_size = static_cast<int>(vocab_size_i64);
     const int top_k = static_cast<int>(std::max<int64_t>(0, top_k_i64));
     const float sparse_min_density_f = static_cast<float>(std::min(1.0, std::max(0.0, sparse_min_density)));
+    const int sparse_scope = static_cast<int>(std::max<int64_t>(0, std::min<int64_t>(3, sparse_scope_i64)));
     const bool use_mlgru = architecture_mode == 1;
     const bool use_relu2 = activation_mode == 1;
 
@@ -555,13 +570,13 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_x = 1.0f;
             quantize_absmax(hidden_q.data(), scale_x, norm_state.data(), hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, state_slot(l, 0));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 0), state_slot(l, 0));
             dequantize(q.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 0], hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, state_slot(l, 1));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 1), state_slot(l, 1));
             dequantize(k.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 1], kv_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, state_slot(l, 2));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 2), state_slot(l, 2));
             dequantize(v.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 2], kv_dim);
 
             if (use_mlgru) {
@@ -598,7 +613,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_attn = 1.0f;
             rms_norm_weighted(attn_normed.data(), attn_out.data(), attn_sub_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_attn, attn_normed.data(), hidden_dim);
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, state_slot(l, 3));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 3), state_slot(l, 3));
 
             const float attn_factor = layer_gammas[w_idx + 3] / std::max(scale_attn, 1e-8f);
             #pragma omp parallel for schedule(static)
@@ -607,12 +622,12 @@ std::vector<int64_t> force_evolved_generate_cpp(
             rms_norm_weighted(ffn_norm_state.data(), hidden_state.data(), ffn_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_x, ffn_norm_state.data(), hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, state_slot(l, 4));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 4), state_slot(l, 4));
             dequantize(gate_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 4], inter_dim);
 
             const bool has_up_proj = layer_weights[w_idx + 5].numel() > 0;
             if (has_up_proj) {
-                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, state_slot(l, 5));
+                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 5), state_slot(l, 5));
                 dequantize(up_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 5], inter_dim);
             }
 
@@ -636,7 +651,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_ffn = 1.0f;
             rms_norm_weighted(ffn_sub_normed.data(), ffn_act.data(), ffn_sub_norm_w, inter_dim);
             quantize_absmax(hidden_q.data(), scale_ffn, ffn_sub_normed.data(), inter_dim);
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, state_slot(l, 6));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 6), state_slot(l, 6));
 
             const float down_factor = layer_gammas[w_idx + 6] / std::max(scale_ffn, 1e-8f);
             #pragma omp parallel for schedule(static)
@@ -692,7 +707,7 @@ def get_runtime():
     print("[BUILD] Compiling Leviathan sparse SIMD runtime...")
     try:
         _evolved_engine = load_inline(
-            name="leviathan_phase56_topk_nosort",
+            name="leviathan_phase58_sparse_scope",
             cpp_sources=[cpp_source],
             functions=["force_evolved_generate_cpp", "reset_profile_cpp", "set_profile_enabled_cpp", "get_profile_cpp"],
             extra_cflags=_extension_flags(),
@@ -734,6 +749,7 @@ class RestoredBitNet:
         profile: bool = False,
         sparse_min_density: float = 1.0,
         sort_topk: bool = True,
+        sparse_scope: str = "all",
     ):
         with open(meta_path, "r", encoding="utf-8") as f:
             self.meta = json.load(f)
@@ -756,6 +772,10 @@ class RestoredBitNet:
         self.profile = bool(profile)
         self.sparse_min_density = max(0.0, min(1.0, float(sparse_min_density)))
         self.sort_topk = bool(sort_topk)
+        sparse_scope_map = {"all": 0, "ffn": 1, "down": 2, "none": 3}
+        if sparse_scope not in sparse_scope_map:
+            raise ValueError(f"Unsupported sparse scope: {sparse_scope}")
+        self.sparse_scope = sparse_scope_map[sparse_scope]
 
         target_model = self.meta.get("model_name", "microsoft/bitnet-b1.58-2B-4T-bf16")
         try:
@@ -989,6 +1009,7 @@ class RestoredBitNet:
             self.top_k_is_ratio,
             self.sparse_min_density,
             self.sort_topk,
+            self.sparse_scope,
             self.architecture_mode,
             self.activation_mode,
             self.rope_theta,
@@ -1027,6 +1048,7 @@ def main() -> None:
     parser.add_argument("--profile", action="store_true", help="Print C++ bitlinear timing counters for each prompt.")
     parser.add_argument("--sparse-min-density", type=float, default=1.0, help="Use sparse Top-K only when effective density is <= this value. Default 1.0 preserves previous behavior; try 0.6 to auto-fallback 0.8/0.9 to dense.")
     parser.add_argument("--no-top-k-sort", action="store_true", help="Experimental: skip sorting active Top-K indices after nth_element. Preserves the selected set but may change sparse memory access locality.")
+    parser.add_argument("--sparse-scope", choices=["all", "ffn", "down", "none"], default="all", help="Experimental sparse projection scope: all projections, FFN only, down projection only, or none.")
     args = parser.parse_args()
 
     print("=" * 100)
@@ -1042,6 +1064,7 @@ def main() -> None:
         profile=args.profile,
         sparse_min_density=args.sparse_min_density,
         sort_topk=not args.no_top_k_sort,
+        sparse_scope=args.sparse_scope,
     )
     while True:
         try:

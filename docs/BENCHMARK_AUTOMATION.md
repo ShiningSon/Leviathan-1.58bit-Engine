@@ -16,6 +16,10 @@ For v0.4 sparse fallback checks, pass `--sparse-min-density 0.6` through the ben
 
 For experimental no-sort Top-K checks, add `--no-top-k-sort`. This forwards the engine option that skips the final index sort after Top-K selection. It is disabled by default, and low-density settings should be treated as experimental unless QA matching remains stable.
 
+The strict QA prompt schema supports `expected`, `forbidden`, and `max_words`. Required keywords must be present, forbidden keywords must be absent, and outputs must stay within the configured word budget. `sample_outputs.txt` records forbidden hits and word counts for review.
+
+For sparse-scope checks, use `--sparse-scope down` to restrict Top-K sparsity to the down projection while keeping recurrent/state projections dense.
+
 ## Example
 
 From the repository root:
@@ -49,6 +53,24 @@ python scripts/benchmark_engine.py `
   --sparse-min-density 0.6 `
   --no-top-k-sort `
   --out-dir .\benchmark_runs\v04_topk_nosort
+```
+
+Strict QA sparse-scope example:
+
+```powershell
+python scripts/benchmark_engine.py `
+  --model-dir .\leviathan_mlgru_30m_instruct_v02b `
+  --engine .\engine.py `
+  --prompts .\benchmarks\prompts_v02b_qa.json `
+  --architecture mlgru `
+  --prompt-template qa `
+  --max-new 80 `
+  --modes 0 0.18 0.2 0.25 `
+  --repeat 10 `
+  --sparse-min-density 0.6 `
+  --no-top-k-sort `
+  --sparse-scope down `
+  --out-dir .\benchmark_runs\v05_sparse_scope_down
 ```
 
 By default, the runner performs one warmup run per mode before the measured repeats. Change this with `--warmup 0` or another integer.

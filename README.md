@@ -66,6 +66,8 @@ python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --
 
 `--no-top-k-sort` is experimental. It skips the final index sort after Top-K selection. It can reduce selection overhead, but low-density settings may degrade output quality. It is disabled by default.
 
+`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. In the 30M strict-QA benchmark, down-only Top-K `0.2` matched dense strict-QA pass rate and reduced latency, but did not beat dense token throughput.
+
 See [`BENCHMARK.md`](BENCHMARK.md) for the current numbers.
 
 ### 3. MatMul-Free MLGRU runtime mode
@@ -435,6 +437,14 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 - [ ] Reduce Top-K selection overhead further.
 - [ ] Add quality-stable threshold or block sparsity path.
 - [ ] Benchmark 70M/100M models.
+
+### v0.5: sparse-scope strict QA
+
+- [x] Add sparse projection scope controls.
+- [x] Add down-proj-only sparse experiment.
+- [x] Add strict QA guards with forbidden keywords and max_words.
+- [ ] Improve sparse kernel throughput.
+- [ ] Validate on 70M/100M models.
 
 ### v1.0 target
 

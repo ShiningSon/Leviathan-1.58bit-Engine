@@ -4,14 +4,58 @@
     "expected": [
       "Leviathan",
       "CPU inference engine"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "Define Leviathan briefly.",
     "expected": [
       "Leviathan",
       "CPU inference engine"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What does Leviathan do?",
@@ -19,7 +63,29 @@
       "Leviathan",
       "ternary",
       "language models"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What is MLGRU?",
@@ -27,21 +93,87 @@
       "MLGRU",
       "recurrent",
       "state"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "Define MLGRU.",
     "expected": [
       "MLGRU",
       "recurrent"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "How does MLGRU differ from attention?",
     "expected": [
       "recurrent",
       "attention"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What is Top-K activation sparsity?",
@@ -49,67 +181,287 @@
       "Top-K",
       "largest activations",
       "smaller activations"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What does Top-K do?",
     "expected": [
       "Top-K",
       "activations"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "How does Top-K reduce computation?",
     "expected": [
       "activations",
       "computation"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What is dense mode?",
     "expected": [
       "Dense mode",
       "all activations"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What does --top-k 0 mean?",
     "expected": [
       "--top-k 0",
       "all activations"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "Which mode uses all activations?",
     "expected": [
       "Dense",
       "all activations"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What dataset was this proof model trained on?",
     "expected": [
       "TinyStories"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "Was the proof model trained on TinyStories?",
     "expected": [
       "TinyStories"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "Is this model a general assistant?",
     "expected": [
       "No",
       "proof model"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What is the limitation of this proof model?",
     "expected": [
       "proof model"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What files are inside a Leviathan MLGRU model package?",
@@ -117,7 +469,29 @@
       ".bin",
       "metadata",
       "tokenizer"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "What files do I need to run the model?",
@@ -125,18 +499,84 @@
       ".bin",
       "metadata",
       "tokenizer"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "Where should source code be uploaded?",
     "expected": [
       "GitHub"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   },
   {
     "prompt": "Where should model files be uploaded?",
     "expected": [
       "Hugging Face"
-    ]
+    ],
+    "forbidden": [
+      "Ben",
+      "Sarah",
+      "Timmy",
+      "branch",
+      "doll",
+      "friends",
+      "girl",
+      "ground",
+      "happy",
+      "mommy",
+      "old tree",
+      "parents",
+      "park",
+      "play",
+      "rocket",
+      "shiny",
+      "sweetie",
+      "toys",
+      "tree"
+    ],
+    "max_words": 32
   }
 ]

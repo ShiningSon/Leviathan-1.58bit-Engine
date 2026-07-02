@@ -42,6 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=int, default=600, help="Seconds before each engine run times out.")
     parser.add_argument("--sparse-min-density", type=float, default=None, help="Forward engine.py --sparse-min-density. When set, high-density Top-K can auto-fallback to dense.")
     parser.add_argument("--no-top-k-sort", action="store_true", help="Forward engine.py --no-top-k-sort for the experimental Top-K no-sort selection path.")
+    parser.add_argument("--sparse-scope", choices=["all", "ffn", "down", "none"], default="all", help="Forward engine.py --sparse-scope for projection-scoped sparse experiments.")
     return parser.parse_args()
 
 
@@ -87,11 +88,24 @@ def load_prompts(path: Path) -> list[dict[str, Any]]:
             raise ValueError(f"Prompt item {index} must be an object.")
         prompt = item.get("prompt")
         expected = item.get("expected", [])
+        forbidden = item.get("forbidden", [])
+        max_words = item.get("max_words")
         if not isinstance(prompt, str) or not prompt.strip():
             raise ValueError(f"Prompt item {index} has an invalid prompt.")
         if not isinstance(expected, list) or not all(isinstance(x, str) for x in expected):
             raise ValueError(f"Prompt item {index} has an invalid expected list.")
-        prompts.append({"prompt": prompt.strip(), "expected": expected})
+        if not isinstance(forbidden, list) or not all(isinstance(x, str) for x in forbidden):
+            raise ValueError(f"Prompt item {index} has an invalid forbidden list.")
+        if max_words is not None and (not isinstance(max_words, int) or max_words < 1):
+            raise ValueError(f"Prompt item {index} has an invalid max_words value.")
+        prompts.append(
+            {
+                "prompt": prompt.strip(),
+                "expected": expected,
+                "forbidden": forbidden,
+                "max_words": max_words,
+            }
+        )
     return prompts
 
 
@@ -110,6 +124,7 @@ def run_engine(
     timeout: int,
     sparse_min_density: float | None,
     no_top_k_sort: bool,
+    sparse_scope: str,
 ) -> dict[str, Any]:
     command = [
         python_exe,
@@ -131,6 +146,8 @@ def run_engine(
         command.extend(["--sparse-min-density", str(sparse_min_density)])
     if no_top_k_sort:
         command.append("--no-top-k-sort")
+    if sparse_scope != "all":
+        command.extend(["--sparse-scope", sparse_scope])
     stdin_text = "\n".join(item["prompt"] for item in prompts) + "\nexit\n"
 
     completed = subprocess.run(
@@ -164,11 +181,16 @@ def parse_engine_output(stdout: str, prompts: list[dict[str, Any]]) -> list[dict
                 {
                     "prompt": prompt_item["prompt"],
                     "expected": prompt_item["expected"],
+                    "forbidden": prompt_item.get("forbidden", []),
+                    "max_words": prompt_item.get("max_words"),
                     "output": "",
                     "latency_ms": None,
                     "tokens_per_sec": None,
                     "matched": [],
                     "missing": prompt_item["expected"],
+                    "forbidden_hit": [],
+                    "word_count": 0,
+                    "too_long": False,
                     "qa_pass": False,
                     "parse_error": "missing ENGINE/Stats block",
                 }
@@ -180,16 +202,25 @@ def parse_engine_output(stdout: str, prompts: list[dict[str, Any]]) -> list[dict
         latency_ms = float(match.group("latency"))
         tokens_per_sec = float(match.group("tps"))
         matched, missing = keyword_match(output, prompt_item["expected"])
+        forbidden_hit = forbidden_match(output, prompt_item.get("forbidden", []))
+        word_count = output_word_count(output)
+        max_words = prompt_item.get("max_words")
+        too_long = max_words is not None and word_count > max_words
         results.append(
             {
                 "prompt": prompt_item["prompt"],
                 "expected": prompt_item["expected"],
+                "forbidden": prompt_item.get("forbidden", []),
+                "max_words": max_words,
                 "output": output,
                 "latency_ms": latency_ms,
                 "tokens_per_sec": tokens_per_sec,
                 "matched": matched,
                 "missing": missing,
-                "qa_pass": not missing,
+                "forbidden_hit": forbidden_hit,
+                "word_count": word_count,
+                "too_long": too_long,
+                "qa_pass": not missing and not forbidden_hit and not too_long,
                 "parse_error": None,
             }
         )
@@ -207,6 +238,26 @@ def keyword_match(output: str, expected: list[str]) -> tuple[list[str], list[str
     matched = [keyword for keyword in expected if keyword.lower() in lower]
     missing = [keyword for keyword in expected if keyword.lower() not in lower]
     return matched, missing
+
+
+def forbidden_match(output: str, forbidden: list[str]) -> list[str]:
+    lower = output.lower()
+    hits: list[str] = []
+    for keyword in forbidden:
+        key = keyword.strip()
+        if not key:
+            continue
+        key_lower = key.lower()
+        if re.fullmatch(r"[a-zA-Z]+", key):
+            if re.search(rf"\b{re.escape(key_lower)}\b", lower):
+                hits.append(keyword)
+        elif key_lower in lower:
+            hits.append(keyword)
+    return hits
+
+
+def output_word_count(output: str) -> int:
+    return len(re.findall(r"\b[\w.-]+\b", output))
 
 
 def mean_or_none(values: list[float]) -> float | None:
@@ -270,7 +321,7 @@ def note_for_summary(summary: dict[str, Any]) -> str:
     if summary["qa_pass_rate"] == 1.0:
         notes.append("QA matching preserved in this run")
     elif summary["qa_pass_rate"] is not None:
-        notes.append("review missing keyword matches")
+        notes.append("review QA guard failures")
     if not notes:
         notes.append("review output")
     return "; ".join(notes)
@@ -290,6 +341,7 @@ def render_markdown(result: dict[str, Any]) -> str:
         f"- Warmup runs per mode: `{settings['warmup']}`",
         f"- Sparse min density: `{settings.get('sparse_min_density') if settings.get('sparse_min_density') is not None else 'not set'}`",
         f"- No Top-K sort: `{settings.get('no_top_k_sort', False)}`",
+        f"- Sparse scope: `{settings.get('sparse_scope', 'all')}`",
         "",
         "| Mode | Avg latency | Avg tokens/sec | QA pass rate | Notes |",
         "|---|---:|---:|---:|---|",
@@ -331,10 +383,16 @@ def render_samples(result: dict[str, Any]) -> str:
                 lines.append(f"USER> {item['prompt']}")
                 lines.append(f"ENGINE> {item['output']}")
                 lines.append(
-                    "QA match: {status}; matched={matched}; missing={missing}".format(
+                    "QA match: {status}; matched={matched}; missing={missing}; forbidden={forbidden}; words={words}".format(
                         status="pass" if item["qa_pass"] else "fail",
                         matched=", ".join(item["matched"]) or "none",
                         missing=", ".join(item["missing"]) or "none",
+                        forbidden=", ".join(item.get("forbidden_hit", [])) or "none",
+                        words=(
+                            f"{item.get('word_count', 0)}/{item.get('max_words')}"
+                            if item.get("max_words") is not None
+                            else str(item.get("word_count", 0))
+                        ),
                     )
                 )
             lines.append("")
@@ -389,6 +447,7 @@ def main() -> int:
             "warmup": args.warmup,
             "sparse_min_density": args.sparse_min_density,
             "no_top_k_sort": args.no_top_k_sort,
+            "sparse_scope": args.sparse_scope,
         },
         "paths": {
             "repo_root": str(root),
@@ -427,6 +486,7 @@ def main() -> int:
                 timeout=args.timeout,
                 sparse_min_density=args.sparse_min_density,
                 no_top_k_sort=args.no_top_k_sort,
+                sparse_scope=args.sparse_scope,
             )
             runs.append(
                 {

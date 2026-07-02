@@ -346,3 +346,36 @@ No Top-K sort: True
 ```text
 The no-sort Top-K experiment reduces Top-K selection overhead by skipping the final sort of active indices after nth_element. In the 30M v0.2b benchmark, Top-K 0.5 with --no-top-k-sort preserved the same 90.0% QA keyword-match pass rate as dense but remained slower. Top-K 0.3 with --no-top-k-sort degraded QA behavior to 20.0%, so low-density no-sort should not be treated as stable. This is an experimental kernel path, not a speedup claim.
 ```
+
+---
+
+## v0.5 sparse-scope strict QA benchmark
+
+Earlier all-projection sparsity was unstable for the 30M v0.2b proof model, and FFN-only Top-K `0.3` degraded QA behavior. Down-proj-only sparsity was the most stable sparse scope in this local run.
+
+Strict QA scoring adds forbidden-keyword and `max_words` guards so TinyStories contamination or story-tail continuations are not counted as clean QA passes. Top-K `0.2` with down-proj-only sparsity is the current representative quality-stable sparse-scope candidate.
+
+```text
+Model: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b
+Prompt template: qa
+Max new tokens: 80
+Repeats: 10
+Warmup runs per mode: 1
+Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
+Sparse min density: 0.6
+No Top-K sort: True
+Sparse scope: down
+```
+
+| Mode | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
+|---|---:|---:|---:|---|
+| Dense `--top-k 0` | 54.07 ms | 372.08 tok/s | 170/200 (85.0%) | Strict QA baseline |
+| Top-K `--top-k 0.18` down-only | 55.25 ms | 360.72 tok/s | 170/200 (85.0%) | Matched dense strict QA, slower throughput |
+| Top-K `--top-k 0.2` down-only | 52.68 ms | 360.36 tok/s | 170/200 (85.0%) | Matched dense strict QA, best latency in this run |
+| Top-K `--top-k 0.25` down-only | 55.86 ms | 352.83 tok/s | 170/200 (85.0%) | Matched dense strict QA, slower throughput |
+
+### Interpretation
+
+```text
+Down-proj-only Top-K 0.2 matched dense strict-QA pass rate and reduced average latency in this 30M benchmark run. Throughput remained below dense, so this is a quality-stable sparse-scope candidate with a latency-positive signal, not a general sparse speedup. Strict QA guards caught TinyStories contamination using forbidden keywords and max_words.
+```
