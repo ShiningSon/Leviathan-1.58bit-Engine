@@ -1,0 +1,120 @@
+{"prompt": "Question: What does Top-K do?\nAnswer:", "answer": "Top-K keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "USER: What does Top-K do?\nASSISTANT:", "answer": "Top-K keeps the largest activations and skips smaller activations to reduce computation."}
+{"prompt": "Question: What is Top-K used for?\nAnswer:", "answer": "Top-K is used to reduce computation by keeping only the largest activations."}
+{"prompt": "USER: What is Top-K used for?\nASSISTANT:", "answer": "Top-K is used to reduce computation by keeping only the largest activations."}
+{"prompt": "Question: What does Top-K keep?\nAnswer:", "answer": "Top-K keeps the largest activations."}
+{"prompt": "USER: What does Top-K keep?\nASSISTANT:", "answer": "Top-K keeps the largest activations."}
+{"prompt": "Question: What does Top-K remove?\nAnswer:", "answer": "Top-K skips smaller activations."}
+{"prompt": "USER: What does Top-K remove?\nASSISTANT:", "answer": "Top-K skips smaller activations."}
+{"prompt": "Question: How does Top-K sparsity work?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activation values and ignores smaller ones."}
+{"prompt": "USER: How does Top-K sparsity work?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activation values and ignores smaller ones."}
+{"prompt": "Question: What are Top-K activations?\nAnswer:", "answer": "Top-K activations are the largest activation values kept for sparse computation."}
+{"prompt": "USER: What are Top-K activations?\nASSISTANT:", "answer": "Top-K activations are the largest activation values kept for sparse computation."}
+{"prompt": "Question: Why use Top-K activation sparsity?\nAnswer:", "answer": "Use Top-K activation sparsity to compute with fewer activation entries."}
+{"prompt": "USER: Why use Top-K activation sparsity?\nASSISTANT:", "answer": "Use Top-K activation sparsity to compute with fewer activation entries."}
+{"prompt": "Question: Does Top-K keep every activation?\nAnswer:", "answer": "No. Top-K keeps the largest activations and skips smaller activations."}
+{"prompt": "USER: Does Top-K keep every activation?\nASSISTANT:", "answer": "No. Top-K keeps the largest activations and skips smaller activations."}
+{"prompt": "Question: What does Top-K skip?\nAnswer:", "answer": "Top-K skips smaller activations."}
+{"prompt": "USER: What does Top-K skip?\nASSISTANT:", "answer": "Top-K skips smaller activations."}
+{"prompt": "Question: How does Top-K reduce computation?\nAnswer:", "answer": "Top-K reduces computation by using fewer activation entries."}
+{"prompt": "USER: How does Top-K reduce computation?\nASSISTANT:", "answer": "Top-K reduces computation by using fewer activation entries."}
+{"prompt": "Question: What is Top-K activation sparsity?\nAnswer:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations."}
+{"prompt": "USER: What is Top-K activation sparsity?\nASSISTANT:", "answer": "Top-K activation sparsity keeps the largest activations and skips smaller activations."}
+{"prompt": "Question: Does Top-K mean dense mode?\nAnswer:", "answer": "No. Top-K is activation sparsity, while dense mode uses all activations."}
+{"prompt": "USER: Does Top-K mean dense mode?\nASSISTANT:", "answer": "No. Top-K is activation sparsity, while dense mode uses all activations."}
+{"prompt": "Question: Is Top-K a model name?\nAnswer:", "answer": "No. Top-K is an activation sparsity method."}
+{"prompt": "USER: Is Top-K a model name?\nASSISTANT:", "answer": "No. Top-K is an activation sparsity method."}
+{"prompt": "Question: What should a Top-K answer mention?\nAnswer:", "answer": "A Top-K answer should mention activations and reduced computation."}
+{"prompt": "USER: What should a Top-K answer mention?\nASSISTANT:", "answer": "A Top-K answer should mention activations and reduced computation."}
+{"prompt": "Question: Does Top-K define Leviathan?\nAnswer:", "answer": "No. Top-K describes activation sparsity, not the whole Leviathan project."}
+{"prompt": "USER: Does Top-K define Leviathan?\nASSISTANT:", "answer": "No. Top-K describes activation sparsity, not the whole Leviathan project."}
+{"prompt": "Question: What files are inside a Leviathan MLGRU model package?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What files are inside a Leviathan MLGRU model package?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: What files do I need to run the model?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What files do I need to run the model?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: Which files are required for local inference?\nAnswer:", "answer": "Local inference needs a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: Which files are required for local inference?\nASSISTANT:", "answer": "Local inference needs a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: What does the model package contain?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What does the model package contain?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: Does the package need a tokenizer folder?\nAnswer:", "answer": "Yes. The model package needs a tokenizer folder with the .bin and metadata JSON files."}
+{"prompt": "USER: Does the package need a tokenizer folder?\nASSISTANT:", "answer": "Yes. The model package needs a tokenizer folder with the .bin and metadata JSON files."}
+{"prompt": "Question: What are the required Leviathan model package files?\nAnswer:", "answer": "The required files are a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What are the required Leviathan model package files?\nASSISTANT:", "answer": "The required files are a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: What does a local MLGRU package include?\nAnswer:", "answer": "A local MLGRU package includes a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What does a local MLGRU package include?\nASSISTANT:", "answer": "A local MLGRU package includes a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: Which file stores packed model weights?\nAnswer:", "answer": "The .bin file stores the exported model package data."}
+{"prompt": "USER: Which file stores packed model weights?\nASSISTANT:", "answer": "The .bin file stores the exported model package data."}
+{"prompt": "Question: Which file stores model metadata?\nAnswer:", "answer": "The metadata JSON file stores tensor metadata and model configuration."}
+{"prompt": "USER: Which file stores model metadata?\nASSISTANT:", "answer": "The metadata JSON file stores tensor metadata and model configuration."}
+{"prompt": "Question: Where is the tokenizer stored?\nAnswer:", "answer": "The tokenizer is stored in the tokenizer folder."}
+{"prompt": "USER: Where is the tokenizer stored?\nASSISTANT:", "answer": "The tokenizer is stored in the tokenizer folder."}
+{"prompt": "Question: Should model package answers continue as a story?\nAnswer:", "answer": "No. Model package answers should stay short and list the required files."}
+{"prompt": "USER: Should model package answers continue as a story?\nASSISTANT:", "answer": "No. Model package answers should stay short and list the required files."}
+{"prompt": "Question: What is the canonical model package answer?\nAnswer:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "USER: What is the canonical model package answer?\nASSISTANT:", "answer": "The model package contains a .bin file, a metadata JSON file, and a tokenizer folder."}
+{"prompt": "Question: What is dense mode?\nAnswer:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "USER: What is dense mode?\nASSISTANT:", "answer": "Dense mode uses all activations and is selected with --top-k 0."}
+{"prompt": "Question: What does --top-k 0 mean?\nAnswer:", "answer": "--top-k 0 disables activation sparsity and uses dense mode."}
+{"prompt": "USER: What does --top-k 0 mean?\nASSISTANT:", "answer": "--top-k 0 disables activation sparsity and uses dense mode."}
+{"prompt": "Question: Which mode uses all activations?\nAnswer:", "answer": "Dense mode uses all activations."}
+{"prompt": "USER: Which mode uses all activations?\nASSISTANT:", "answer": "Dense mode uses all activations."}
+{"prompt": "Question: Does dense mode skip activations?\nAnswer:", "answer": "No. Dense mode uses all activations."}
+{"prompt": "USER: Does dense mode skip activations?\nASSISTANT:", "answer": "No. Dense mode uses all activations."}
+{"prompt": "Question: When should dense mode be used?\nAnswer:", "answer": "Dense mode should be used as the default speed baseline at 30M scale."}
+{"prompt": "USER: When should dense mode be used?\nASSISTANT:", "answer": "Dense mode should be used as the default speed baseline at 30M scale."}
+{"prompt": "Question: Is dense mode the current speed baseline?\nAnswer:", "answer": "Yes. Dense mode is the current speed baseline at 30M scale."}
+{"prompt": "USER: Is dense mode the current speed baseline?\nASSISTANT:", "answer": "Yes. Dense mode is the current speed baseline at 30M scale."}
+{"prompt": "Question: What command selects dense mode?\nAnswer:", "answer": "--top-k 0 selects dense mode."}
+{"prompt": "USER: What command selects dense mode?\nASSISTANT:", "answer": "--top-k 0 selects dense mode."}
+{"prompt": "Question: Does --top-k 0 enable sparsity?\nAnswer:", "answer": "No. --top-k 0 disables activation sparsity."}
+{"prompt": "USER: Does --top-k 0 enable sparsity?\nASSISTANT:", "answer": "No. --top-k 0 disables activation sparsity."}
+{"prompt": "Question: What does --sparse-scope down do?\nAnswer:", "answer": "--sparse-scope down applies Top-K only to the down projection."}
+{"prompt": "USER: What does --sparse-scope down do?\nASSISTANT:", "answer": "--sparse-scope down applies Top-K only to the down projection."}
+{"prompt": "Question: Which projection is sparse in down-only mode?\nAnswer:", "answer": "Only the down projection is sparse in down-only mode."}
+{"prompt": "USER: Which projection is sparse in down-only mode?\nASSISTANT:", "answer": "Only the down projection is sparse in down-only mode."}
+{"prompt": "Question: Why keep recurrent projections dense?\nAnswer:", "answer": "Recurrent and state projections stay dense to preserve QA stability."}
+{"prompt": "USER: Why keep recurrent projections dense?\nASSISTANT:", "answer": "Recurrent and state projections stay dense to preserve QA stability."}
+{"prompt": "Question: What is the current sparse-scope candidate?\nAnswer:", "answer": "Down-only Top-K 0.2 is the current quality-stable experimental candidate."}
+{"prompt": "USER: What is the current sparse-scope candidate?\nASSISTANT:", "answer": "Down-only Top-K 0.2 is the current quality-stable experimental candidate."}
+{"prompt": "Question: Is down-only sparse mode a general speedup?\nAnswer:", "answer": "No. Down-only sparse mode is an experimental candidate, not a general speedup."}
+{"prompt": "USER: Is down-only sparse mode a general speedup?\nASSISTANT:", "answer": "No. Down-only sparse mode is an experimental candidate, not a general speedup."}
+{"prompt": "Question: What does sparse-scope control?\nAnswer:", "answer": "Sparse-scope controls which projections are allowed to use Top-K sparsity."}
+{"prompt": "USER: What does sparse-scope control?\nASSISTANT:", "answer": "Sparse-scope controls which projections are allowed to use Top-K sparsity."}
+{"prompt": "Question: What does --sparse-scope all mean?\nAnswer:", "answer": "--sparse-scope all allows Top-K sparsity on all projections."}
+{"prompt": "USER: What does --sparse-scope all mean?\nASSISTANT:", "answer": "--sparse-scope all allows Top-K sparsity on all projections."}
+{"prompt": "Question: What does --sparse-scope ffn mean?\nAnswer:", "answer": "--sparse-scope ffn allows Top-K sparsity on FFN projections."}
+{"prompt": "USER: What does --sparse-scope ffn mean?\nASSISTANT:", "answer": "--sparse-scope ffn allows Top-K sparsity on FFN projections."}
+{"prompt": "Question: What does --sparse-scope none mean?\nAnswer:", "answer": "--sparse-scope none disables sparse projection use."}
+{"prompt": "USER: What does --sparse-scope none mean?\nASSISTANT:", "answer": "--sparse-scope none disables sparse projection use."}
+{"prompt": "Question: Why is down-only preferred?\nAnswer:", "answer": "Down-only is preferred because it preserved strict QA behavior in the 30M benchmark."}
+{"prompt": "USER: Why is down-only preferred?\nASSISTANT:", "answer": "Down-only is preferred because it preserved strict QA behavior in the 30M benchmark."}
+{"prompt": "Question: What does --no-top-k-sort do?\nAnswer:", "answer": "--no-top-k-sort skips the final active-index sort after Top-K selection."}
+{"prompt": "USER: What does --no-top-k-sort do?\nASSISTANT:", "answer": "--no-top-k-sort skips the final active-index sort after Top-K selection."}
+{"prompt": "Question: Is no-sort Top-K experimental?\nAnswer:", "answer": "Yes. No-sort Top-K is experimental."}
+{"prompt": "USER: Is no-sort Top-K experimental?\nASSISTANT:", "answer": "Yes. No-sort Top-K is experimental."}
+{"prompt": "Question: Why skip Top-K sorting?\nAnswer:", "answer": "Skipping Top-K sorting can reduce selection overhead."}
+{"prompt": "USER: Why skip Top-K sorting?\nASSISTANT:", "answer": "Skipping Top-K sorting can reduce selection overhead."}
+{"prompt": "Question: Does no-sort guarantee better quality?\nAnswer:", "answer": "No. No-sort does not guarantee better quality."}
+{"prompt": "USER: Does no-sort guarantee better quality?\nASSISTANT:", "answer": "No. No-sort does not guarantee better quality."}
+{"prompt": "Question: Can no-sort affect quality?\nAnswer:", "answer": "Yes. Low-density no-sort settings may affect quality."}
+{"prompt": "USER: Can no-sort affect quality?\nASSISTANT:", "answer": "Yes. Low-density no-sort settings may affect quality."}
+{"prompt": "Question: Is no-sort a speedup claim?\nAnswer:", "answer": "No. No-sort is an experimental path, not a speedup claim."}
+{"prompt": "USER: Is no-sort a speedup claim?\nASSISTANT:", "answer": "No. No-sort is an experimental path, not a speedup claim."}
+{"prompt": "Question: What does --sparse-min-density do?\nAnswer:", "answer": "--sparse-min-density uses sparse Top-K only when density is low enough."}
+{"prompt": "USER: What does --sparse-min-density do?\nASSISTANT:", "answer": "--sparse-min-density uses sparse Top-K only when density is low enough."}
+{"prompt": "Question: Why use --sparse-min-density 0.6?\nAnswer:", "answer": "Use --sparse-min-density 0.6 to let high-density Top-K fall back to dense kernels."}
+{"prompt": "USER: Why use --sparse-min-density 0.6?\nASSISTANT:", "answer": "Use --sparse-min-density 0.6 to let high-density Top-K fall back to dense kernels."}
+{"prompt": "Question: When does Top-K fall back to dense?\nAnswer:", "answer": "Top-K falls back to dense when effective density is above the sparse-min-density limit."}
+{"prompt": "USER: When does Top-K fall back to dense?\nASSISTANT:", "answer": "Top-K falls back to dense when effective density is above the sparse-min-density limit."}
+{"prompt": "Question: Is sparse-min-density a speedup claim?\nAnswer:", "answer": "No. Sparse-min-density is a runtime guardrail, not a speedup claim."}
+{"prompt": "USER: Is sparse-min-density a speedup claim?\nASSISTANT:", "answer": "No. Sparse-min-density is a runtime guardrail, not a speedup claim."}
+{"prompt": "Question: What happens at high Top-K density?\nAnswer:", "answer": "At high density, Top-K can fall back to dense kernels."}
+{"prompt": "USER: What happens at high Top-K density?\nASSISTANT:", "answer": "At high density, Top-K can fall back to dense kernels."}
+{"prompt": "Question: What is the sparse-min-density guardrail?\nAnswer:", "answer": "It prevents high-density Top-K from forcing the sparse path."}
+{"prompt": "USER: What is the sparse-min-density guardrail?\nASSISTANT:", "answer": "It prevents high-density Top-K from forcing the sparse path."}
+{"prompt": "Question: Is this model a general assistant?\nAnswer:", "answer": "No. It is a small proof model for testing Leviathan training, export, and CPU runtime."}
+{"prompt": "USER: Is this model a general assistant?\nASSISTANT:", "answer": "No. It is a small proof model for testing Leviathan training, export, and CPU runtime."}
+{"prompt": "Question: What is the limitation of this proof model?\nAnswer:", "answer": "It is a small proof model, not a general assistant."}
+{"prompt": "USER: What is the limitation of this proof model?\nASSISTANT:", "answer": "It is a small proof model, not a general assistant."}
+{"prompt": "Question: Why is this model small?\nAnswer:", "answer": "The model is small because it is a proof model for testing the Leviathan route."}
+{"prompt": "USER: Why is this model small?\nASSISTANT:", "answer": "The model is small because it is a proof model for testing the Leviathan route."}
