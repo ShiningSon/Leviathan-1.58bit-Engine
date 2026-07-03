@@ -170,9 +170,9 @@ Future work will focus on larger 70M/100M models and a lower-overhead sparse ker
 
 ---
 
-## Next benchmark targets
+## Completed benchmark milestones and next targets
 
-### v0.2: Instruction-mix 30M
+### Completed: v0.2 instruction-mix 30M
 
 Goal:
 
@@ -180,57 +180,69 @@ Goal:
 TinyStories + small QA/instruction mixture
 ```
 
-Measure:
+Outcome:
 
-- Dense speed.
-- Top-K 0.9 / 0.8 quality.
-- Simple QA output quality.
+- v02b established the supervised QA proof route.
+- v02c and v02d were not successful final candidates.
+- v02e/v02f/v02g checkpoint fine-tuning restored strict QA to 95.0%.
+- Current final proof-model candidate: `Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g`.
 
-### v0.3: Automated benchmark script
+### Completed: v0.3 automated benchmark script
 
 Goal:
 
 ```text
-Run the same prompt set across dense, top-k 0.9, top-k 0.8, top-k 0.7.
+Run the same prompt set across dense and sparse modes.
 Repeat each mode multiple times.
 Export results to JSON and Markdown.
 ```
 
-### v0.4: Larger model
+Outcome:
+
+- `scripts/benchmark_engine.py` is the repeatable benchmark path.
+- Strict QA guards include expected keywords, forbidden keywords, and max word limits.
+
+### Completed/active: v0.4 and v0.5 sparse-kernel experiments
+
+Current findings:
+
+- Threshold sparsity and naive block Top-K were negative experiments and should not be included in the active runtime path.
+- Down-proj-only sparse scope was the most stable sparse setting.
+- Down-only Top-K preserved strict QA in tested v02e modes, but did not improve measured latency or token throughput.
+- Dense remains the recommended speed path for the 30M proof model.
+
+### Next: v0.6 sparse kernel and scaling work
 
 Goal:
 
 ```text
-70M to 100M MLGRU model
+Improve sparse kernel throughput, reduce Top-K selection overhead, and retest on 70M/100M MLGRU models.
 ```
 
-Measure whether Top-K begins to catch up or beat dense when dense matvec work becomes larger.
+Measure:
 
-### v0.5: Sparse kernel optimization
-
-Current follow-up:
-
-- Threshold sparsity and naive block Top-K were negative experiments and should not be included in the active runtime path.
-- Continue with projection-scoped sparsity, especially down-proj-only.
-- Improve sparse kernel throughput and Top-K selection overhead.
-- Retest on 70M/100M models.
+- Dense baseline speed.
+- Down-only Top-K quality preservation.
+- Actual tokens/sec speedup only if measured tokens/sec exceeds dense under the same settings.
+- Larger-model behavior at 70M/100M scale.
 
 ---
 
 ## Current recommendation
 
-For the 30M proof model:
+For the current v02g 30M instruct proof model:
 
 ```text
-Use dense MLGRU mode for speed.
-Use ratio Top-K for sparsity-quality experiments.
-Do not claim Top-K speedup yet at this scale.
+Use dense MLGRU mode (--top-k 0) for the default speed/quality baseline.
+Treat down-only Top-K as a sparsity-quality experiment, not a speed path.
+Do not claim Top-K speedup at 30M scale because dense still has the best measured latency and token throughput.
 ```
 
 For future scaling:
 
 ```text
-Top-K should be retested on 70M/100M models and after sparse-kernel optimization.
+Retest Top-K on 70M/100M models after sparse-kernel optimization and lower-overhead Top-K selection.
+Only claim sparse speedup if measured tokens/sec is higher than dense under the same benchmark settings.
 ```
 
 ---

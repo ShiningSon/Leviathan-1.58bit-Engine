@@ -357,27 +357,35 @@ Then unzip and run the model locally with `engine.py`.
 
 ## Current benchmark summary
 
-Model:
+Current final proof-model candidate:
 
 ```text
-Leviathan-MLGRU-30M-TinyStories-v0.1
+Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g
 ```
 
-Local CPU runtime, prompt `Once upon a time`, `max-new=120`:
+Uploaded model package:
 
-| Mode | Runtime setting | Observed tokens/sec | Notes |
-|---|---:|---:|---|
-| Dense MLGRU | `--top-k 0` | 383.90 tok/s | Best speed and coherence at 30M scale |
-| Ratio Top-K | `--top-k 0.9` | 210.44 tok/s | Coherent, slower than dense |
-| Ratio Top-K | `--top-k 0.8` | 205.81 tok/s | Coherent but altered, slower than dense |
-| Ratio Top-K | `--top-k 0.7` | 238.95 tok/s | Still readable, slower than dense |
+[ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g)
 
-Interpretation:
+Dense strict QA, local CPU runtime, prompt template `qa`, `max-new=80`, repeats `10`:
+
+| Mode | Runtime setting | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
+|---|---:|---:|---:|---:|---|
+| Dense MLGRU | `--top-k 0` | 49.45 ms | 360.50 tok/s | 190/200 (95.0%) | Current v02g dense baseline |
+
+Sparse-scope reference from v02e:
+
+| Mode | Runtime setting | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
+|---|---:|---:|---:|---:|---|
+| Dense MLGRU | `--top-k 0` | 49.23 ms | 359.66 tok/s | 190/200 (95.0%) | v02e dense baseline |
+| Down-only Top-K | `--top-k 0.18 --sparse-scope down --sparse-min-density 0.6 --no-top-k-sort` | 50.42 ms | 355.52 tok/s | 190/200 (95.0%) | Preserved QA, slower than dense |
+| Down-only Top-K | `--top-k 0.20 --sparse-scope down --sparse-min-density 0.6 --no-top-k-sort` | 51.23 ms | 349.83 tok/s | 190/200 (95.0%) | Preserved QA, slower than dense |
+| Down-only Top-K | `--top-k 0.25 --sparse-scope down --sparse-min-density 0.6 --no-top-k-sort` | 51.64 ms | 350.50 tok/s | 190/200 (95.0%) | Preserved QA, slower than dense |
 
 ```text
-At 30M scale, dense mode is faster because Top-K selection overhead dominates.
-Ratio Top-K preserves readable generation, but it is not yet a speed win at this model size.
-Future work will focus on larger 70M/100M models and a lower-overhead sparse kernel.
+v02g restores dense strict QA to 95.0% on the local Leviathan MLGRU QA benchmark.
+Down-only Top-K preserved strict QA in tested modes, but dense still had the best measured latency and token throughput.
+This is a proof-model result, not a sparse speedup claim and not a general-assistant claim.
 ```
 
 See [`BENCHMARK.md`](BENCHMARK.md) for details.
@@ -394,22 +402,26 @@ Recommended distribution:
 2. **GitHub Releases**: small zipped proof packages and screenshots.
 3. **Hugging Face model repo**: model package, tokenizer, metadata, model card, sample outputs.
 
-Published Hugging Face model repository:
+Published Hugging Face model repositories:
 
-[ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
+- Current final instruct proof-model candidate: [ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g)
+- Earlier v0.2b QA proof model: [ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b)
+- Historical v0.1 TinyStories proof model: [ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
 
-Suggested files:
+Suggested files for the current v02g package:
 
 ```text
 README.md                         # Hugging Face model card
-leviathan_mlgru_30m_t4.bin
-leviathan_mlgru_30m_t4_meta.json
+leviathan_mlgru_30m_instruct_v02g.bin
+leviathan_mlgru_30m_instruct_v02g_meta.json
 leviathan_mlgru_tokenizer/
 report.json
 sample_outputs.txt
+benchmark_v02g_dense_results.md
+benchmark_v02e_sparse_down_results.md
 ```
 
-The model package contains the exported MLGRU binary, metadata, tokenizer, model card, benchmark report, and sample outputs.
+The current model package contains the exported MLGRU binary, metadata, tokenizer, model card, benchmark report, and sample outputs.
 
 ---
 
@@ -460,6 +472,14 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 - [ ] Expand QA coverage beyond the small project-specific seed set.
 
 For sparse-scope experiments, `--sparse-scope down --top-k 0.2 --sparse-min-density 0.6 --no-top-k-sort` is the current representative experimental QA-stability candidate. It preserved strict-QA behavior in the v02e sparse comparison, but it is not the default runtime recommendation and did not beat dense latency or token throughput.
+
+### v0.2g: checkpoint fine-tune strict QA repair
+
+- [x] Fine-tune from the v02b/v02e checkpoint route instead of from-scratch calibration.
+- [x] Restore dense strict QA to 190/200 (95.0%).
+- [x] Publish the v02g Hugging Face proof-model package.
+- [x] Document the remaining package-description known limitation.
+- [ ] Expand beyond the current 20-prompt project-specific strict QA set.
 
 ### v0.3: benchmark automation
 

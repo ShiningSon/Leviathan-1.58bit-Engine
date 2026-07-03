@@ -8,7 +8,7 @@ Leviathan benchmark results should be repeatable enough to compare dense mode wi
 
 Use `--prompt-template plain` only for raw continuation experiments. Plain mode can break the QA matching behavior that v0.2b was trained to demonstrate.
 
-Dense mode is the default recommendation for the current 30M model. Top-K `0.9` and `0.8` preserved the tested QA mappings in local checks, but do not claim Top-K speedup unless the measured average tokens/sec is actually higher than dense under the same settings.
+Dense mode is the default recommendation for the current v02g 30M proof model. Down-only Top-K preserved strict QA in tested modes, but do not claim Top-K speedup unless the measured average tokens/sec is actually higher than dense under the same settings.
 
 The v0.2b prompt set has been expanded from the initial 4 prompts to a small 20-prompt regression set. It covers core concepts, runtime modes, prompt-template usage, model packaging, and GitHub/Hugging Face distribution. It is still not a full model evaluation benchmark.
 
