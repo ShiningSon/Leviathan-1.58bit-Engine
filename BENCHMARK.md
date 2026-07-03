@@ -20,7 +20,7 @@ CUDA: not used for local inference benchmark
 Engine commit: 6a05e63ab636
 v0.1 model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories
 v0.2b model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b
-v0.2g model package target: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
+v0.2g model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 ```
 
 Runtime notes:
@@ -388,6 +388,7 @@ This historical v0.5 run showed a latency-positive signal for down-proj-only Top
 
 ```text
 Model: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g
+HF package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 Prompt template: qa
 Max new tokens: 80
 Repeats: 10
@@ -398,7 +399,7 @@ Mode: dense only
 
 | Mode | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
 |---|---:|---:|---:|---|
-| Dense `--top-k 0` | 49.45 ms | 360.50 tok/s | 190/200 (95.0%) | Current v02g dense strict-QA result |
+| Dense `--top-k 0` | 49.45 ms | 360.50 tok/s | 190/200 (95.0%) | Uploaded v02g candidate dense strict-QA result |
 
 Known limitation:
 

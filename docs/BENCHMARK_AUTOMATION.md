@@ -42,6 +42,8 @@ python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v0
 
 v02g dense strict QA example:
 
+Current uploaded v02g HF package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
+
 ```cmd
 python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02g --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 --repeat 10 --out-dir .\benchmark_runs\v02g_dense_strict_qa
 ```

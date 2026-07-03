@@ -12,6 +12,8 @@ The current direction is:
 
 > Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, but dense remains the recommended speed path at 30M scale. `leviathan_mlgru_30m_instruct_v02g` is the current final proof-model candidate: it restores dense strict QA to 95.0% on the local Leviathan MLGRU QA benchmark. Down-projection-only Top-K preserved strict QA in tested modes, but did not improve measured latency or token throughput.
 
+Current v02g model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
+
 ---
 
 ## What is implemented
@@ -94,7 +96,7 @@ Current final instruct proof-model candidate:
 
 - `Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g`
 - local package folder: `leviathan_mlgru_30m_instruct_v02g/`
-- target Hugging Face package: `ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g`
+- uploaded Hugging Face package: [ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g)
 - dense strict QA: 190/200 keyword-guarded passes, or 95.0%
 - known limitation: one package-description prompt still shows residual TinyStories-style continuation
 
@@ -297,6 +299,10 @@ ENGINE> The first proof model was trained on TinyStories.
 ## Running the v0.2g final proof-model candidate
 
 `Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g` is the current final TinyStories instruct proof-model candidate. It is a small model for validating Leviathan training, export, and local CPU runtime behavior, not a general assistant.
+
+Uploaded Hugging Face package:
+
+[ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g)
 
 Dense strict QA reached 190/200 passes, or 95.0%, in the local benchmark. Down-only Top-K preserved the same strict QA pass rate in the tested v02e sparse-scope modes, but dense remained faster in measured latency and tokens/sec. No sparse speedup is claimed.
 
