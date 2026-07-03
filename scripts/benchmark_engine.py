@@ -42,6 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=int, default=600, help="Seconds before each engine run times out.")
     parser.add_argument("--sparse-min-density", type=float, default=None, help="Forward engine.py --sparse-min-density. When set, high-density Top-K can auto-fallback to dense.")
     parser.add_argument("--no-top-k-sort", action="store_true", help="Forward engine.py --no-top-k-sort for the experimental Top-K no-sort selection path.")
+    parser.add_argument("--top-k-select", choices=["nth", "histogram"], default="nth", help="Forward engine.py --top-k-select for selector experiments.")
     parser.add_argument("--sparse-scope", choices=["all", "ffn", "down", "none"], default="all", help="Forward engine.py --sparse-scope for projection-scoped sparse experiments.")
     return parser.parse_args()
 
@@ -124,6 +125,7 @@ def run_engine(
     timeout: int,
     sparse_min_density: float | None,
     no_top_k_sort: bool,
+    top_k_select: str,
     sparse_scope: str,
 ) -> dict[str, Any]:
     command = [
@@ -146,6 +148,8 @@ def run_engine(
         command.extend(["--sparse-min-density", str(sparse_min_density)])
     if no_top_k_sort:
         command.append("--no-top-k-sort")
+    if top_k_select != "nth":
+        command.extend(["--top-k-select", top_k_select])
     if sparse_scope != "all":
         command.extend(["--sparse-scope", sparse_scope])
     stdin_text = "\n".join(item["prompt"] for item in prompts) + "\nexit\n"
@@ -341,6 +345,7 @@ def render_markdown(result: dict[str, Any]) -> str:
         f"- Warmup runs per mode: `{settings['warmup']}`",
         f"- Sparse min density: `{settings.get('sparse_min_density') if settings.get('sparse_min_density') is not None else 'not set'}`",
         f"- No Top-K sort: `{settings.get('no_top_k_sort', False)}`",
+        f"- Top-K selector: `{settings.get('top_k_select', 'nth')}`",
         f"- Sparse scope: `{settings.get('sparse_scope', 'all')}`",
         "",
         "| Mode | Avg latency | Avg tokens/sec | QA pass rate | Notes |",
@@ -447,6 +452,7 @@ def main() -> int:
             "warmup": args.warmup,
             "sparse_min_density": args.sparse_min_density,
             "no_top_k_sort": args.no_top_k_sort,
+            "top_k_select": args.top_k_select,
             "sparse_scope": args.sparse_scope,
         },
         "paths": {
@@ -486,6 +492,7 @@ def main() -> int:
                 timeout=args.timeout,
                 sparse_min_density=args.sparse_min_density,
                 no_top_k_sort=args.no_top_k_sort,
+                top_k_select=args.top_k_select,
                 sparse_scope=args.sparse_scope,
             )
             runs.append(
