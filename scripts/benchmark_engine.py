@@ -35,6 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--modes", nargs="+", default=["0", "0.9", "0.8"], help="Top-K values to benchmark.")
     parser.add_argument("--repeat", type=int, default=3, help="Measured repeats per mode.")
     parser.add_argument("--warmup", type=int, default=1, help="Warmup runs per mode, excluded from averages.")
+    parser.add_argument("--mode-schedule", choices=["block", "interleave"], default="block", help="Run modes in contiguous blocks or round-robin order per repeat.")
     parser.add_argument("--out-dir", default="benchmark_runs/v02b", help="Output directory.")
     parser.add_argument("--bin", dest="bin_name", help="Model .bin filename inside --model-dir.")
     parser.add_argument("--meta", dest="meta_name", help="Model metadata JSON filename inside --model-dir.")
@@ -76,6 +77,23 @@ def find_one(directory: Path, pattern: str, description: str) -> Path:
         names = ", ".join(p.name for p in matches)
         raise ValueError(f"Multiple {description} files found in {directory}: {names}. Pass an explicit CLI value.")
     return matches[0]
+
+
+def model_display_name(model_dir: Path, meta_path: Path) -> str:
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except Exception:
+        return model_dir.name
+
+    for key in ("display_name", "model_id", "release_name", "package_name"):
+        value = meta.get(key)
+        if isinstance(value, str) and value.strip() and not value.strip().startswith("."):
+            return value.strip()
+
+    model_name = meta.get("model_name")
+    if isinstance(model_name, str) and model_name.strip() and not model_name.strip().startswith("."):
+        return model_name.strip()
+    return model_dir.name
 
 
 def load_prompts(path: Path) -> list[dict[str, Any]]:
@@ -334,7 +352,7 @@ def note_for_summary(summary: dict[str, Any]) -> str:
 def render_markdown(result: dict[str, Any]) -> str:
     settings = result["settings"]
     lines = [
-        "## Automated benchmark: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b",
+        f"## Automated benchmark: {result['model']}",
         "",
         "Command settings:",
         "",
@@ -343,6 +361,7 @@ def render_markdown(result: dict[str, Any]) -> str:
         f"- Max new tokens: `{settings['max_new']}`",
         f"- Repeats: `{settings['repeat']}`",
         f"- Warmup runs per mode: `{settings['warmup']}`",
+        f"- Mode schedule: `{settings.get('mode_schedule', 'block')}`",
         f"- Sparse min density: `{settings.get('sparse_min_density') if settings.get('sparse_min_density') is not None else 'not set'}`",
         f"- No Top-K sort: `{settings.get('no_top_k_sort', False)}`",
         f"- Top-K selector: `{settings.get('top_k_select', 'nth')}`",
@@ -441,7 +460,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     result: dict[str, Any] = {
-        "model": "Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2b",
+        "model": model_display_name(model_dir, meta_path),
         "created_at": datetime.now(timezone.utc).isoformat(),
         "settings": {
             "architecture": args.architecture,
@@ -450,6 +469,7 @@ def main() -> int:
             "modes": args.modes,
             "repeat": args.repeat,
             "warmup": args.warmup,
+            "mode_schedule": args.mode_schedule,
             "sparse_min_density": args.sparse_min_density,
             "no_top_k_sort": args.no_top_k_sort,
             "top_k_select": args.top_k_select,
@@ -468,46 +488,59 @@ def main() -> int:
         "modes": [],
     }
 
-    for mode in args.modes:
-        runs: list[dict[str, Any]] = []
-        total_runs = args.warmup + args.repeat
-        for run_index in range(total_runs):
-            warmup = run_index < args.warmup
-            repeat_index = run_index - args.warmup + 1 if not warmup else run_index + 1
-            print(
-                f"[benchmark] mode={mode} {'warmup' if warmup else 'repeat'}={repeat_index}",
-                flush=True,
-            )
-            process = run_engine(
-                python_exe=args.python,
-                engine_path=engine_path,
-                model_dir=model_dir,
-                bin_name=bin_path.name,
-                meta_name=meta_path.name,
-                architecture=args.architecture,
-                prompt_template=args.prompt_template,
-                max_new=args.max_new,
-                mode=mode,
-                prompts=prompts,
-                timeout=args.timeout,
-                sparse_min_density=args.sparse_min_density,
-                no_top_k_sort=args.no_top_k_sort,
-                top_k_select=args.top_k_select,
-                sparse_scope=args.sparse_scope,
-            )
-            runs.append(
-                {
-                    "warmup": warmup,
-                    "repeat_index": repeat_index,
-                    "process": process,
-                }
-            )
+    mode_results = [{"mode": mode, "runs": []} for mode in args.modes]
 
+    def run_one(mode: str, warmup: bool, repeat_index: int) -> dict[str, Any]:
+        print(
+            f"[benchmark] mode={mode} {'warmup' if warmup else 'repeat'}={repeat_index}",
+            flush=True,
+        )
+        process = run_engine(
+            python_exe=args.python,
+            engine_path=engine_path,
+            model_dir=model_dir,
+            bin_name=bin_path.name,
+            meta_name=meta_path.name,
+            architecture=args.architecture,
+            prompt_template=args.prompt_template,
+            max_new=args.max_new,
+            mode=mode,
+            prompts=prompts,
+            timeout=args.timeout,
+            sparse_min_density=args.sparse_min_density,
+            no_top_k_sort=args.no_top_k_sort,
+            top_k_select=args.top_k_select,
+            sparse_scope=args.sparse_scope,
+        )
+        return {
+            "warmup": warmup,
+            "repeat_index": repeat_index,
+            "process": process,
+        }
+
+    if args.mode_schedule == "block":
+        for mode_result in mode_results:
+            mode = mode_result["mode"]
+            runs = mode_result["runs"]
+            total_runs = args.warmup + args.repeat
+            for run_index in range(total_runs):
+                warmup = run_index < args.warmup
+                repeat_index = run_index - args.warmup + 1 if not warmup else run_index + 1
+                runs.append(run_one(mode, warmup, repeat_index))
+    else:
+        for warmup_index in range(args.warmup):
+            for mode_result in mode_results:
+                mode_result["runs"].append(run_one(mode_result["mode"], True, warmup_index + 1))
+        for repeat_index in range(1, args.repeat + 1):
+            for mode_result in mode_results:
+                mode_result["runs"].append(run_one(mode_result["mode"], False, repeat_index))
+
+    for mode_result in mode_results:
         result["modes"].append(
             {
-                "mode": mode,
-                "runs": runs,
-                "summary": summarize_mode(mode, runs),
+                "mode": mode_result["mode"],
+                "runs": mode_result["runs"],
+                "summary": summarize_mode(mode_result["mode"], mode_result["runs"]),
             }
         )
 
