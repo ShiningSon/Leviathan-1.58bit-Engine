@@ -20,6 +20,8 @@ The strict QA prompt schema supports `expected`, `forbidden`, and `max_words`. R
 
 For sparse-scope checks, use `--sparse-scope down` to restrict Top-K sparsity to the down projection while keeping recurrent/state projections dense.
 
+For v0.6 speed-candidate checks, use `--top-k-select histogram` with `--mode-schedule interleave` so dense and Top-K modes are alternated by repeat instead of measured in large mode blocks. Treat any 30M result as an experimental local CPU candidate until it is repeated on larger models and additional hardware.
+
 ## CMD examples
 
 From the repository root:
@@ -52,6 +54,12 @@ v02e down-only sparse-scope comparison example:
 
 ```cmd
 python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02e --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.18 0.2 0.25 --repeat 10 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --out-dir .\benchmark_runs\v02e_sparse_down_strict_qa
+```
+
+v0.6 histogram Top-K interleaved candidate example:
+
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02g --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.12 --repeat 50 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v06_histogram_topk_candidate
 ```
 
 By default, the runner performs one warmup run per mode before the measured repeats. Change this with `--warmup 0` or another integer.

@@ -211,13 +211,16 @@ Current findings:
 - Down-only Top-K preserved strict QA in tested v02e modes, but did not improve measured latency or token throughput.
 - Dense remains the recommended speed path for the 30M proof model.
 
-### Next: v0.6 sparse kernel and scaling work
+### Completed/active: v0.6 histogram selector and interleaved scheduling
 
-Goal:
+Current findings:
 
-```text
-Improve sparse kernel throughput, reduce Top-K selection overhead, and retest on 70M/100M MLGRU models.
-```
+- Projection-slot profiling showed the sparse down projection can be faster than the dense down projection, but Top-K selection overhead can erase the gain.
+- The experimental histogram Top-K selector reduces selection overhead by using int8 activation magnitude buckets.
+- Interleaved benchmark scheduling reduces mode-order bias when comparing dense and sparse modes.
+- On the v02g 30M proof model, down-only Top-K `0.12` is the current experimental 30M speed candidate, not a general sparse speedup claim.
+
+### Next: v0.6 scaling validation
 
 Measure:
 
@@ -234,8 +237,8 @@ For the current v02g 30M instruct proof model:
 
 ```text
 Use dense MLGRU mode (--top-k 0) for the default speed/quality baseline.
-Treat down-only Top-K as a sparsity-quality experiment, not a speed path.
-Do not claim Top-K speedup at 30M scale because dense still has the best measured latency and token throughput.
+Treat histogram down-only Top-K 0.12 as an experimental 30M speed candidate.
+Do not claim general sparse speedup from this 30M local CPU result.
 ```
 
 For future scaling:
@@ -243,6 +246,7 @@ For future scaling:
 ```text
 Retest Top-K on 70M/100M models after sparse-kernel optimization and lower-overhead Top-K selection.
 Only claim sparse speedup if measured tokens/sec is higher than dense under the same benchmark settings.
+Do not assume the 30M candidate result automatically scales to larger models.
 ```
 
 ---
@@ -454,4 +458,44 @@ Sparse scope: down
 
 ```text
 Down-only Top-K preserved the tested strict-QA pass rate across 0.18, 0.20, and 0.25. Dense still had the best measured latency and token throughput, so this is a QA-preservation result, not a sparse speedup result.
+```
+
+---
+
+## v0.6 histogram Top-K selector candidate
+
+This benchmark records the current experimental 30M speed candidate after adding projection-slot profiling, the histogram Top-K selector, and interleaved benchmark scheduling. It is a local CPU result on the v02g 30M MLGRU proof model, not a general sparse speedup claim and not evidence that the same result automatically scales to larger models.
+
+```text
+Automated benchmark: leviathan_mlgru_30m_instruct_v02g
+Architecture: mlgru
+Prompt template: qa
+Max new tokens: 80
+Repeats: 50
+Warmup runs per mode: 1
+Mode schedule: interleave
+Sparse min density: 0.6
+No Top-K sort: True
+Top-K selector: histogram
+Sparse scope: down
+Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
+```
+
+| Mode | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
+|---|---:|---:|---:|---|
+| Dense `--top-k 0` | 50.74 ms | 350.97 tok/s | 950/1000 (95.0%) | Dense baseline in repeat-50 interleaved run |
+| Top-K `--top-k 0.12` histogram down-only | 50.25 ms | 354.17 tok/s | 950/1000 (95.0%) | Experimental 30M speed candidate; same strict QA pass rate |
+
+### Interpretation
+
+```text
+v0.6 adds an experimental histogram Top-K selector and interleaved benchmark scheduling. On the v02g 30M MLGRU proof model, down-projection-only Top-K at density 0.12 produced a small local CPU speed candidate in repeat-50 interleaved testing: 50.25 ms / 354.17 tok/s versus dense 50.74 ms / 350.97 tok/s, while preserving strict QA at 950/1000 (95.0%).
+
+The latency improvement is about 0.97%, and the tokens/sec improvement is about 0.91%. This is a 30M experimental result, not a general sparse speedup claim. The next validation target is 70M/100M scaling under the same strict QA and interleaved scheduling discipline.
+```
+
+Known limitation:
+
+```text
+The same package-description prompt remains the known QA failure: "What files are inside a Leviathan MLGRU model package?" The model says .bin and metadata JSON but misses tokenizer and adds a TinyStories-style "happy" continuation.
 ```

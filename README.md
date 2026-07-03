@@ -10,7 +10,7 @@ The current direction is:
 3. experiment with ratio-based Top-K activation sparsity;
 4. support an experimental attention-free MLGRU runtime path for recurrent checkpoints trained for that path.
 
-> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, but dense remains the recommended speed path at 30M scale. `leviathan_mlgru_30m_instruct_v02g` is the current final proof-model candidate: it restores dense strict QA to 95.0% on the local Leviathan MLGRU QA benchmark. Down-projection-only Top-K preserved strict QA in tested modes, but did not improve measured latency or token throughput.
+> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, with dense still the default recommendation for the 30M proof model. `leviathan_mlgru_30m_instruct_v02g` is the current final proof-model candidate: it restores dense strict QA to 95.0% on the local Leviathan MLGRU QA benchmark. v0.6 adds a histogram Top-K selector and interleaved benchmark scheduling; down-projection-only Top-K `0.12` is a small local 30M experimental speed candidate, not a general sparse speedup claim.
 
 Current v02g model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 
@@ -55,7 +55,8 @@ This avoids the failure mode where a fixed K is acceptable for narrow projection
 Current benchmark result:
 
 - Ratio Top-K preserves readable output in the 30M MLGRU proof model.
-- Dense mode is still faster at 30M scale.
+- Dense mode remains the default recommendation at 30M scale.
+- v0.6 histogram Top-K `0.12` with `--sparse-scope down` produced a small local CPU speed candidate in repeat-50 interleaved testing while preserving strict QA at 95.0%.
 - Top-K is currently a scaling and kernel-optimization path, not a guaranteed speedup for every model size.
 
 v0.4 guardrail:
@@ -68,7 +69,7 @@ python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --
 
 `--no-top-k-sort` is experimental. It skips the final index sort after Top-K selection. It can reduce selection overhead, but low-density settings may degrade output quality. It is disabled by default.
 
-`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. Down-only Top-K preserved strict-QA behavior in tested modes, but the final v02e sparse comparison did not beat dense latency or token throughput.
+`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. With the v0.6 histogram selector, down-only Top-K `0.12` is the current 30M experimental speed candidate, but it still needs larger-model validation before any broader sparse-speedup claim.
 
 See [`BENCHMARK.md`](BENCHMARK.md) for the current numbers.
 
@@ -304,9 +305,9 @@ Uploaded Hugging Face package:
 
 [ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g)
 
-Dense strict QA reached 190/200 passes, or 95.0%, in the local benchmark. Down-only Top-K preserved the same strict QA pass rate in the tested v02e sparse-scope modes, but dense remained faster in measured latency and tokens/sec. No sparse speedup is claimed.
+Dense strict QA reached 190/200 passes, or 95.0%, in the local benchmark. Earlier v02e down-only Top-K modes preserved the same strict QA pass rate, but dense remained faster in that comparison. In v0.6, histogram down-only Top-K `0.12` became the current experimental 30M speed candidate in repeat-50 interleaved testing: 50.25 ms / 354.17 tok/s versus dense 50.74 ms / 350.97 tok/s, with strict QA unchanged at 950/1000 (95.0%). This is not a general sparse speedup claim.
 
-For sparse-scope experiments, `--sparse-scope down --top-k 0.2 --sparse-min-density 0.6 --no-top-k-sort` is the current representative experimental QA-stability candidate. It matched dense strict-QA pass rate in the v02e sparse benchmark, but it is not the default runtime recommendation and did not beat dense token throughput.
+For sparse-scope speed-candidate experiments, `--sparse-scope down --top-k 0.12 --sparse-min-density 0.6 --no-top-k-sort --top-k-select histogram` is the current 30M experimental setting. It is not the default runtime recommendation and still needs 70M/100M validation.
 
 Known limitation: the v02g TinyStories proof model retains one package-description failure due to residual story-style continuation.
 
@@ -384,8 +385,8 @@ Sparse-scope reference from v02e:
 
 ```text
 v02g restores dense strict QA to 95.0% on the local Leviathan MLGRU QA benchmark.
-Down-only Top-K preserved strict QA in tested modes, but dense still had the best measured latency and token throughput.
-This is a proof-model result, not a sparse speedup claim and not a general-assistant claim.
+Earlier v02e down-only Top-K modes preserved strict QA but did not beat dense. The v0.6 histogram Top-K `0.12` result is now the small local 30M experimental speed candidate.
+This is a proof-model result, not a general sparse speedup claim and not a general-assistant claim.
 ```
 
 See [`BENCHMARK.md`](BENCHMARK.md) for details.
@@ -443,7 +444,7 @@ PTQ conversion can be useful for runtime stress tests, but coherent generation r
 - This is a research prototype, not a production LLM runtime.
 - The 30M MLGRU model is a proof model, not a general assistant.
 - TinyStories-trained models produce story-like completions, not broad factual answers.
-- Top-K is not faster at 30M scale in the current implementation.
+- Top-K speed remains experimental at 30M scale; v0.6 has a small local histogram Top-K candidate, not a general sparse speedup.
 - MLGRU mode requires compatible recurrent weights.
 - Larger models, better datasets, and kernel-level sparse optimizations are needed before claiming major speedups.
 
@@ -471,7 +472,7 @@ This repository is released under the MIT License. See [`LICENSE`](LICENSE).
 - [x] Publish sample outputs and model card for the v0.2b proof model.
 - [ ] Expand QA coverage beyond the small project-specific seed set.
 
-For sparse-scope experiments, `--sparse-scope down --top-k 0.2 --sparse-min-density 0.6 --no-top-k-sort` is the current representative experimental QA-stability candidate. It preserved strict-QA behavior in the v02e sparse comparison, but it is not the default runtime recommendation and did not beat dense latency or token throughput.
+For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --sparse-min-density 0.6 --no-top-k-sort` setting was the v02e QA-stability candidate. The current v0.6 30M speed candidate uses histogram Top-K at density `0.12`, remains experimental, and is not the default runtime recommendation.
 
 ### v0.2g: checkpoint fine-tune strict QA repair
 
