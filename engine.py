@@ -65,10 +65,19 @@ struct ProfileStats {
     int64_t sparse_kernel_us = 0;
     int64_t active_k_sum = 0;
     int64_t input_dim_sum = 0;
+    int64_t dense_calls_by_slot[7] = {0};
+    int64_t dense_kernel_us_by_slot[7] = {0};
+    int64_t sparse_calls_by_slot[7] = {0};
+    int64_t sparse_kernel_us_by_slot[7] = {0};
+    int64_t topk_select_us_by_slot[7] = {0};
+    int64_t fallback_calls_by_slot[7] = {0};
+    int64_t active_k_sum_by_slot[7] = {0};
+    int64_t input_dim_sum_by_slot[7] = {0};
 };
 
 static bool g_profile_enabled = false;
 static ProfileStats g_profile;
+static const char* PROFILE_SLOT_NAMES[7] = {"q", "k", "v", "o", "gate", "up", "down"};
 
 static inline int64_t micros_since(std::chrono::high_resolution_clock::time_point start) {
     const auto end = std::chrono::high_resolution_clock::now();
@@ -254,6 +263,7 @@ void bitlinear_dispatch(
     bool top_k_is_ratio,
     float sparse_min_density,
     bool sort_topk,
+    int projection_slot,
     bool allow_sparse,
     TopKDeltaState* topk_state
 ) {
@@ -273,6 +283,7 @@ void bitlinear_dispatch(
         : 1.0f;
     const bool requested_sparse = allow_sparse && effective_k > 0 && effective_k < in_dim && topk_state != nullptr;
     const bool use_sparse = requested_sparse && effective_density <= sparse_min_density;
+    const int profile_slot = (projection_slot >= 0 && projection_slot < 7) ? projection_slot : -1;
 
     if (use_sparse) {
         std::chrono::high_resolution_clock::time_point t_select;
@@ -281,9 +292,15 @@ void bitlinear_dispatch(
         const std::vector<int>& active_indices = update_topk_delta_state(*topk_state, x_quant, in_dim, effective_k, sort_topk);
 
         if (g_profile_enabled) {
-            g_profile.topk_select_us += micros_since(t_select);
+            const int64_t select_us = micros_since(t_select);
+            g_profile.topk_select_us += select_us;
             g_profile.active_k_sum += static_cast<int64_t>(active_indices.size());
             g_profile.input_dim_sum += static_cast<int64_t>(in_dim);
+            if (profile_slot >= 0) {
+                g_profile.topk_select_us_by_slot[profile_slot] += select_us;
+                g_profile.active_k_sum_by_slot[profile_slot] += static_cast<int64_t>(active_indices.size());
+                g_profile.input_dim_sum_by_slot[profile_slot] += static_cast<int64_t>(in_dim);
+            }
         }
 
         std::chrono::high_resolution_clock::time_point t_kernel;
@@ -292,8 +309,13 @@ void bitlinear_dispatch(
         bitlinear_topk_sparse(x_quant, packed_w, in_dim, out_dim, active_indices, out_accum);
 
         if (g_profile_enabled) {
-            g_profile.sparse_kernel_us += micros_since(t_kernel);
+            const int64_t sparse_us = micros_since(t_kernel);
+            g_profile.sparse_kernel_us += sparse_us;
             g_profile.topk_calls += 1;
+            if (profile_slot >= 0) {
+                g_profile.sparse_kernel_us_by_slot[profile_slot] += sparse_us;
+                g_profile.sparse_calls_by_slot[profile_slot] += 1;
+            }
         }
     } else {
         std::chrono::high_resolution_clock::time_point t_kernel;
@@ -302,9 +324,15 @@ void bitlinear_dispatch(
         bitlinear_dense_fused(x_quant, packed_w, in_dim, out_dim, out_accum);
 
         if (g_profile_enabled) {
-            g_profile.dense_kernel_us += micros_since(t_kernel);
+            const int64_t dense_us = micros_since(t_kernel);
+            g_profile.dense_kernel_us += dense_us;
             g_profile.dense_calls += 1;
             if (requested_sparse) g_profile.topk_fallback_calls += 1;
+            if (profile_slot >= 0) {
+                g_profile.dense_kernel_us_by_slot[profile_slot] += dense_us;
+                g_profile.dense_calls_by_slot[profile_slot] += 1;
+                if (requested_sparse) g_profile.fallback_calls_by_slot[profile_slot] += 1;
+            }
         }
     }
 }
@@ -329,6 +357,29 @@ py::dict get_profile_cpp() {
     d["avg_active_k"] = g_profile.topk_calls ? static_cast<double>(g_profile.active_k_sum) / static_cast<double>(g_profile.topk_calls) : 0.0;
     d["avg_input_dim"] = g_profile.topk_calls ? static_cast<double>(g_profile.input_dim_sum) / static_cast<double>(g_profile.topk_calls) : 0.0;
     d["avg_density"] = g_profile.input_dim_sum ? static_cast<double>(g_profile.active_k_sum) / static_cast<double>(g_profile.input_dim_sum) : 0.0;
+    py::list slots;
+    for (int i = 0; i < 7; ++i) {
+        py::dict slot;
+        slot["slot"] = i;
+        slot["name"] = PROFILE_SLOT_NAMES[i];
+        slot["dense_calls"] = g_profile.dense_calls_by_slot[i];
+        slot["dense_kernel_ms"] = static_cast<double>(g_profile.dense_kernel_us_by_slot[i]) / 1000.0;
+        slot["sparse_calls"] = g_profile.sparse_calls_by_slot[i];
+        slot["sparse_kernel_ms"] = static_cast<double>(g_profile.sparse_kernel_us_by_slot[i]) / 1000.0;
+        slot["topk_select_ms"] = static_cast<double>(g_profile.topk_select_us_by_slot[i]) / 1000.0;
+        slot["fallback_calls"] = g_profile.fallback_calls_by_slot[i];
+        slot["avg_active_k"] = g_profile.sparse_calls_by_slot[i]
+            ? static_cast<double>(g_profile.active_k_sum_by_slot[i]) / static_cast<double>(g_profile.sparse_calls_by_slot[i])
+            : 0.0;
+        slot["avg_input_dim"] = g_profile.sparse_calls_by_slot[i]
+            ? static_cast<double>(g_profile.input_dim_sum_by_slot[i]) / static_cast<double>(g_profile.sparse_calls_by_slot[i])
+            : 0.0;
+        slot["avg_density"] = g_profile.input_dim_sum_by_slot[i]
+            ? static_cast<double>(g_profile.active_k_sum_by_slot[i]) / static_cast<double>(g_profile.input_dim_sum_by_slot[i])
+            : 0.0;
+        slots.append(slot);
+    }
+    d["slots"] = slots;
     return d;
 }
 
@@ -570,13 +621,13 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_x = 1.0f;
             quantize_absmax(hidden_q.data(), scale_x, norm_state.data(), hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 0), state_slot(l, 0));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 0].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, 0, projection_allows_sparse(sparse_scope, 0), state_slot(l, 0));
             dequantize(q.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 0], hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 1), state_slot(l, 1));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 1].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, 1, projection_allows_sparse(sparse_scope, 1), state_slot(l, 1));
             dequantize(k.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 1], kv_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 2), state_slot(l, 2));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 2].data_ptr<uint8_t>(), hidden_dim, kv_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, 2, projection_allows_sparse(sparse_scope, 2), state_slot(l, 2));
             dequantize(v.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 2], kv_dim);
 
             if (use_mlgru) {
@@ -613,7 +664,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_attn = 1.0f;
             rms_norm_weighted(attn_normed.data(), attn_out.data(), attn_sub_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_attn, attn_normed.data(), hidden_dim);
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 3), state_slot(l, 3));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 3].data_ptr<uint8_t>(), hidden_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, 3, projection_allows_sparse(sparse_scope, 3), state_slot(l, 3));
 
             const float attn_factor = layer_gammas[w_idx + 3] / std::max(scale_attn, 1e-8f);
             #pragma omp parallel for schedule(static)
@@ -622,12 +673,12 @@ std::vector<int64_t> force_evolved_generate_cpp(
             rms_norm_weighted(ffn_norm_state.data(), hidden_state.data(), ffn_norm_w, hidden_dim);
             quantize_absmax(hidden_q.data(), scale_x, ffn_norm_state.data(), hidden_dim);
 
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 4), state_slot(l, 4));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 4].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, 4, projection_allows_sparse(sparse_scope, 4), state_slot(l, 4));
             dequantize(gate_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 4], inter_dim);
 
             const bool has_up_proj = layer_weights[w_idx + 5].numel() > 0;
             if (has_up_proj) {
-                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 5), state_slot(l, 5));
+                bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 5].data_ptr<uint8_t>(), hidden_dim, inter_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, 5, projection_allows_sparse(sparse_scope, 5), state_slot(l, 5));
                 dequantize(up_out.data(), accum_buf.data(), scale_x, layer_gammas[w_idx + 5], inter_dim);
             }
 
@@ -651,7 +702,7 @@ std::vector<int64_t> force_evolved_generate_cpp(
             float scale_ffn = 1.0f;
             rms_norm_weighted(ffn_sub_normed.data(), ffn_act.data(), ffn_sub_norm_w, inter_dim);
             quantize_absmax(hidden_q.data(), scale_ffn, ffn_sub_normed.data(), inter_dim);
-            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, projection_allows_sparse(sparse_scope, 6), state_slot(l, 6));
+            bitlinear_dispatch(hidden_q.data(), layer_weights[w_idx + 6].data_ptr<uint8_t>(), inter_dim, hidden_dim, accum_buf.data(), top_k, top_k_is_ratio, sparse_min_density_f, sort_topk, 6, projection_allows_sparse(sparse_scope, 6), state_slot(l, 6));
 
             const float down_factor = layer_gammas[w_idx + 6] / std::max(scale_ffn, 1e-8f);
             #pragma omp parallel for schedule(static)
@@ -1091,6 +1142,23 @@ def main() -> None:
                 f"avg_density={profile_data['avg_density']:.3f}"
                 "]"
             )
+            slots = profile_data.get("slots", [])
+            if slots:
+                print("[Profile by slot:")
+                for slot in slots:
+                    print(
+                        f"  {slot['name']} "
+                        f"dense_calls={slot['dense_calls']} "
+                        f"dense_ms={slot['dense_kernel_ms']:.2f} "
+                        f"sparse_calls={slot['sparse_calls']} "
+                        f"select_ms={slot['topk_select_ms']:.2f} "
+                        f"sparse_ms={slot['sparse_kernel_ms']:.2f} "
+                        f"fallback_calls={slot['fallback_calls']} "
+                        f"avg_active_k={slot['avg_active_k']:.1f} "
+                        f"avg_input_dim={slot['avg_input_dim']:.1f} "
+                        f"avg_density={slot['avg_density']:.3f}"
+                    )
+                print("]")
 
 
 if __name__ == "__main__":
