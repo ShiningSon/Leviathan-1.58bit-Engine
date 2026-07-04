@@ -895,12 +895,18 @@ class RestoredBitNet:
         self.sparse_scope = sparse_scope_map[sparse_scope]
 
         target_model = self.meta.get("model_name", "microsoft/bitnet-b1.58-2B-4T-bf16")
+        target_model_path = target_model
+        if isinstance(target_model, str) and not os.path.isabs(target_model):
+            meta_dir = os.path.dirname(os.path.abspath(meta_path))
+            candidate = os.path.abspath(os.path.join(meta_dir, target_model))
+            if os.path.exists(candidate):
+                target_model_path = candidate
         try:
-            self.config = AutoConfig.from_pretrained(target_model)
+            self.config = AutoConfig.from_pretrained(target_model_path)
         except Exception:
             self.config = None
         self.meta_config = self.meta.get("model_config", {})
-        self.tokenizer = AutoTokenizer.from_pretrained(target_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(target_model_path)
 
         embed_keys = [
             key

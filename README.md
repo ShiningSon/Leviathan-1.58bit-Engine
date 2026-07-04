@@ -118,6 +118,9 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |-- training/
 |   |-- 01_train_export_mlgru_modal_T4_clean.py
 |   |-- 03_train_supervised_qa_mlgru_modal_T4.py
+|   |-- 07_finetune_supervised_qa_mlgru_modal_L40S_v02f.py
+|   |-- configs/
+|   |   `-- v07a_70m_mlgru.json
 |   `-- instruction_qa_supervised_v02b.jsonl
 |-- scripts/
 |   `-- benchmark_engine.py
@@ -125,6 +128,7 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |   `-- prompts_v02b_qa.json
 |-- docs/
 |   |-- BENCHMARK_AUTOMATION.md
+|   |-- V07A_70M_SCALING_PROBE.md
 |   `-- V02B_SUPERVISED_QA_GUIDE.md
 |-- BENCHMARK.md                      # Current runtime benchmark notes
 |-- LICENSE                           # MIT License
@@ -506,6 +510,13 @@ For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --spa
 - [x] Add strict QA guards with forbidden keywords and max_words.
 - [ ] Improve sparse kernel throughput.
 - [ ] Validate on 70M/100M models.
+
+### v0.7a: 70M MLGRU scaling probe
+
+- [x] Add config-driven 70M MLGRU run path.
+- [x] Add 70M parameter estimate and benchmark commands.
+- [ ] Train and export `leviathan_mlgru_70m_instruct_v07a`.
+- [ ] Run dense and histogram Top-K sweep benchmarks.
 
 ### v1.0 target
 

@@ -13,7 +13,9 @@ This is the v0.2e checkpoint fine-tune route:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 import modal
 
@@ -50,6 +52,28 @@ if LOCAL_QA_SEED.exists():
         pass
 
 
+def estimate_mlgru_params(vocab_size: int, hidden_size: int, n_layers: int, intermediate_size: int) -> int:
+    """Estimate trainable parameters for the tied-embedding MLGRU proof model."""
+    embedding = vocab_size * hidden_size
+    linear_per_layer = (4 * hidden_size * hidden_size) + (3 * hidden_size * intermediate_size)
+    norm_per_layer = (3 * hidden_size) + intermediate_size
+    final_norm = hidden_size
+    return embedding + n_layers * (linear_per_layer + norm_per_layer) + final_norm
+
+
+def load_run_config(config_json: str) -> dict[str, Any]:
+    if not config_json:
+        return {}
+    path = Path(config_json)
+    if not path.exists() and not path.is_absolute():
+        path = Path(__file__).with_name("configs") / config_json
+    with open(path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+    if not isinstance(config, dict):
+        raise ValueError("Config JSON must contain an object.")
+    return config
+
+
 @app.function(
     image=image,
     gpu="L40S",
@@ -73,6 +97,8 @@ def train_and_export(
     qa_seed_path: str = "/root/instruction_qa_supervised_v02f.jsonl",
     base_ckpt_path: str = "/data/runs/leviathan_mlgru_30m_instruct_v02e/checkpoints/final.pt",
     base_tokenizer_dir: str = "/data/exports/leviathan_mlgru_30m_instruct_v02e/leviathan_mlgru_tokenizer",
+    training_stage: str = "v0.2f-package-question-repair",
+    model_display_name: str = "",
     seed: int = 1337,
 ):
     import json
@@ -594,13 +620,16 @@ def train_and_export(
     print(f"[model] params={param_count:,} hidden={hidden_size} layers={n_layers} inter={intermediate_size}")
 
     ckpt_path_obj = Path(base_ckpt_path) if base_ckpt_path else None
-    if ckpt_path_obj is None or not ckpt_path_obj.exists():
-        raise FileNotFoundError(f"Base v0.2b checkpoint not found: {base_ckpt_path}")
-    print(f"[finetune] loading base checkpoint: {ckpt_path_obj}")
-    ckpt = torch.load(str(ckpt_path_obj), map_location=device)
-    state = ckpt.get("model", ckpt)
-    model.load_state_dict(state, strict=True)
-    print("[finetune] base checkpoint loaded")
+    if ckpt_path_obj is not None:
+        if not ckpt_path_obj.exists():
+            raise FileNotFoundError(f"Base checkpoint not found: {base_ckpt_path}")
+        print(f"[finetune] loading base checkpoint: {ckpt_path_obj}")
+        ckpt = torch.load(str(ckpt_path_obj), map_location=device)
+        state = ckpt.get("model", ckpt)
+        model.load_state_dict(state, strict=True)
+        print("[finetune] base checkpoint loaded")
+    else:
+        print("[train] no base checkpoint supplied; training from scratch")
 
     optim = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
     start = time.time()
@@ -732,6 +761,7 @@ def train_and_export(
 
     meta = {
         "format": "leviathan-v2",
+        "display_name": model_display_name or run_name,
         # The engine loads AutoTokenizer.from_pretrained(model_name).
         # After unzipping locally, run engine.py from the export folder so this relative path resolves.
         "model_name": "./leviathan_mlgru_tokenizer",
@@ -749,7 +779,7 @@ def train_and_export(
             "tie_word_embeddings": True,
             "architecture": "mlgru",
             "trained_for_recurrent_runtime": True,
-            "training_stage": "v0.2f-package-question-repair",
+            "training_stage": training_stage,
             "base_dataset": dataset,
             "qa_ratio": qa_ratio,
         },
@@ -790,11 +820,24 @@ def train_and_export(
             "supervised_answer_loss": True,
         },
         "params": param_count,
+        "architecture": {
+            "model_type": "leviathan_mlgru",
+            "hidden_size": hidden_size,
+            "intermediate_size": intermediate_size,
+            "num_hidden_layers": n_layers,
+            "num_attention_heads": 1,
+            "num_key_value_heads": 1,
+            "hidden_act": "relu2",
+            "architecture": "mlgru",
+            "training_stage": training_stage,
+        },
         "final_loss": losses[-1] if losses else None,
         "sample": sample,
         "samples": sample_outputs,
         "export_zip": str(zip_path),
         "local_engine_command_dense": f"python engine.py --bin {bin_name} --meta {meta_name} --architecture mlgru --top-k 0 --max-new 120 --prompt-template plain",
+        "local_engine_command_dense_qa": f"python engine.py --bin {bin_name} --meta {meta_name} --architecture mlgru --top-k 0 --max-new 80 --prompt-template qa",
+        "local_engine_command_histogram_down_012": f"python engine.py --bin {bin_name} --meta {meta_name} --architecture mlgru --top-k 0.12 --max-new 80 --prompt-template qa --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram",
         "local_engine_command_topk_09": f"python engine.py --bin {bin_name} --meta {meta_name} --architecture mlgru --top-k 0.9 --max-new 120 --prompt-template plain",
     }
     report_path = export_dir / "report.json"
@@ -824,6 +867,8 @@ def train_and_export(
 
 @app.local_entrypoint()
 def main(
+    config_json: str = "",
+    dry_run: bool = False,
     run_name: str = "leviathan_mlgru_30m_instruct_v02f",
     dataset: str = "tinystories",
     vocab_size: int = 8192,
@@ -841,22 +886,42 @@ def main(
     base_ckpt_path: str = "/data/runs/leviathan_mlgru_30m_instruct_v02e/checkpoints/final.pt",
     base_tokenizer_dir: str = "/data/exports/leviathan_mlgru_30m_instruct_v02e/leviathan_mlgru_tokenizer",
 ):
-    result = train_and_export.remote(
-        run_name=run_name,
-        dataset=dataset,
-        vocab_size=vocab_size,
-        hidden_size=hidden_size,
-        n_layers=n_layers,
-        intermediate_size=intermediate_size,
-        seq_len=seq_len,
-        batch_size=batch_size,
-        steps=steps,
-        lr=lr,
-        max_train_tokens=max_train_tokens,
-        tokenizer_docs=tokenizer_docs,
-        qa_ratio=qa_ratio,
-        qa_seed_path=qa_seed_path,
-        base_ckpt_path=base_ckpt_path,
-        base_tokenizer_dir=base_tokenizer_dir,
+    values: dict[str, Any] = {
+        "run_name": run_name,
+        "dataset": dataset,
+        "vocab_size": vocab_size,
+        "hidden_size": hidden_size,
+        "n_layers": n_layers,
+        "intermediate_size": intermediate_size,
+        "seq_len": seq_len,
+        "batch_size": batch_size,
+        "steps": steps,
+        "lr": lr,
+        "max_train_tokens": max_train_tokens,
+        "tokenizer_docs": tokenizer_docs,
+        "qa_ratio": qa_ratio,
+        "qa_seed_path": qa_seed_path,
+        "base_ckpt_path": base_ckpt_path,
+        "base_tokenizer_dir": base_tokenizer_dir,
+        "training_stage": "v0.2f-package-question-repair",
+        "model_display_name": "",
+    }
+    config = load_run_config(config_json)
+    unknown = sorted(set(config) - set(values))
+    if unknown:
+        raise ValueError(f"Unsupported config key(s): {', '.join(unknown)}")
+    values.update(config)
+
+    estimated_params = estimate_mlgru_params(
+        int(values["vocab_size"]),
+        int(values["hidden_size"]),
+        int(values["n_layers"]),
+        int(values["intermediate_size"]),
     )
+    print("[config]", json.dumps(values, indent=2, ensure_ascii=False))
+    print(f"[estimate] params={estimated_params:,}")
+    if dry_run:
+        return
+
+    result = train_and_export.remote(**values)
     print(result)
