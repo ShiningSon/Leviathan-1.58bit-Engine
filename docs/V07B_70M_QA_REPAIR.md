@@ -42,11 +42,39 @@ The v07a model needs QA repair before another sparse validation pass. Observed f
 - `What files are inside a Leviathan MLGRU model package?` partially answers `.bin` and metadata JSON but misses tokenizer and falls into TinyStories-style continuation.
 - `What files do I need to run the model?` sometimes answers TinyStories instead of package files.
 
-Success criteria:
+Original success criteria:
 
 - Dense QA should improve from 85.0% toward 95.0%.
 - Sparse sweep results are only meaningful if dense QA is at least near 90%, ideally 95%.
-- If Top-K `0.12` or `0.15` preserves dense QA and improves tokens/sec, v07b becomes the real 70M speed candidate.
+- If a Top-K mode preserves dense QA and improves tokens/sec, v07b becomes the real 70M speed candidate.
+
+## v07b confirmed repeat-30 result
+
+v07b repaired the QA issue and produced the current 70M experimental local CPU speed candidate.
+
+```text
+Architecture: mlgru
+Prompt template: qa
+Max new tokens: 80
+Repeats: 30
+Warmup runs per mode: 1
+Mode schedule: interleave
+Sparse min density: 0.6
+No Top-K sort: True
+Top-K selector: histogram
+Sparse scope: down
+```
+
+| Mode | Avg latency | Avg tokens/sec | Strict QA pass rate |
+|---|---:|---:|---:|
+| Dense `--top-k 0` | 72.85 ms | 238.50 tok/s | 600/600 (100.0%) |
+| Top-K `--top-k 0.08` | 68.54 ms | 254.12 tok/s | 600/600 (100.0%) |
+| Top-K `--top-k 0.10` | 68.84 ms | 252.97 tok/s | 600/600 (100.0%) |
+| Top-K `--top-k 0.12` | 69.48 ms | 250.62 tok/s | 600/600 (100.0%) |
+
+Top-K `0.08` histogram down-only is the current v07b 70M experimental local CPU speed candidate. It improved latency by about 5.92% and tokens/sec by about 6.55% versus dense in this repeat-30 interleaved run while preserving the measured strict QA pass rate.
+
+This is a local CPU 70M proof-model result. It is not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to 100M or larger models.
 
 ## Config
 
@@ -121,9 +149,16 @@ Histogram down-only sweep:
 python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_70m_instruct_v07b --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.08 0.10 0.12 0.15 0.18 --repeat 10 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v07b_70m_histogram_sweep_repeat10
 ```
 
+Confirmed repeat-30 candidate run:
+
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_70m_instruct_v07b --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.08 0.10 0.12 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v07b_70m_histogram_candidate_repeat30
+```
+
 ## Interpretation rules
 
 - Treat v07b as a QA repair proof model, not a general assistant.
 - Use `--prompt-template qa` for project-specific QA checks.
 - Do not claim sparse speedup unless Top-K preserves dense QA and measured tokens/sec exceeds dense under the same benchmark settings.
+- Do not claim that Top-K is always faster or that this result automatically scales to 100M or larger models.
 - Do not upload v07b to Hugging Face until the package and benchmark are reviewed.

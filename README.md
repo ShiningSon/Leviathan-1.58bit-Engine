@@ -10,7 +10,7 @@ The current direction is:
 3. experiment with ratio-based Top-K activation sparsity;
 4. support an experimental attention-free MLGRU runtime path for recurrent checkpoints trained for that path.
 
-> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, with dense still the default recommendation for the 30M proof model. `leviathan_mlgru_30m_instruct_v02g` is the current final proof-model candidate: it restores dense strict QA to 95.0% on the local Leviathan MLGRU QA benchmark. v0.6 adds a histogram Top-K selector and interleaved benchmark scheduling; down-projection-only Top-K `0.12` is a small local 30M experimental speed candidate, not a general sparse speedup claim.
+> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, with dense still the default recommendation for the 30M proof model. `leviathan_mlgru_70m_instruct_v07b` is the current 70M local CPU speed candidate: histogram down-projection-only Top-K `0.08` reached 68.54 ms / 254.12 tok/s versus dense 72.85 ms / 238.50 tok/s in repeat-30 interleaved testing, with both modes at 600/600 strict QA. This is an experimental 70M proof-model result, not a general sparse speedup claim.
 
 Current v02g model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 
@@ -57,6 +57,7 @@ Current benchmark result:
 - Ratio Top-K preserves readable output in the 30M MLGRU proof model.
 - Dense mode remains the default recommendation at 30M scale.
 - v0.6 histogram Top-K `0.12` with `--sparse-scope down` produced a small local CPU speed candidate in repeat-50 interleaved testing while preserving strict QA at 95.0%.
+- v07b 70M histogram Top-K `0.08` with `--sparse-scope down` is the current experimental local CPU speed candidate: 68.54 ms / 254.12 tok/s versus dense 72.85 ms / 238.50 tok/s, with both modes at 600/600 strict QA in repeat-30 interleaved testing.
 - Top-K is currently a scaling and kernel-optimization path, not a guaranteed speedup for every model size.
 
 v0.4 guardrail:
@@ -69,7 +70,7 @@ python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --
 
 `--no-top-k-sort` is experimental. It skips the final index sort after Top-K selection. It can reduce selection overhead, but low-density settings may degrade output quality. It is disabled by default.
 
-`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. With the v0.6 histogram selector, down-only Top-K `0.12` is the current 30M experimental speed candidate, but it still needs larger-model validation before any broader sparse-speedup claim.
+`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. With the histogram selector, v07b down-only Top-K `0.08` is the current 70M experimental local CPU speed candidate, but it is not a general sparse speedup claim and does not automatically scale to 100M or larger models.
 
 See [`BENCHMARK.md`](BENCHMARK.md) for the current numbers.
 
@@ -313,7 +314,7 @@ Uploaded Hugging Face package:
 
 Dense strict QA reached 190/200 passes, or 95.0%, in the local benchmark. Earlier v02e down-only Top-K modes preserved the same strict QA pass rate, but dense remained faster in that comparison. In v0.6, histogram down-only Top-K `0.12` became the current experimental 30M speed candidate in repeat-50 interleaved testing: 50.25 ms / 354.17 tok/s versus dense 50.74 ms / 350.97 tok/s, with strict QA unchanged at 950/1000 (95.0%). This is not a general sparse speedup claim.
 
-For sparse-scope speed-candidate experiments, `--sparse-scope down --top-k 0.12 --sparse-min-density 0.6 --no-top-k-sort --top-k-select histogram` is the current 30M experimental setting. It is not the default runtime recommendation and still needs 70M/100M validation.
+For sparse-scope speed-candidate experiments, `--sparse-scope down --top-k 0.12 --sparse-min-density 0.6 --no-top-k-sort --top-k-select histogram` is the 30M experimental setting. The v07b 70M candidate uses histogram down-only Top-K `0.08`; broader validation still needs a 100M scaling probe and additional hardware.
 
 Known limitation: the v02g TinyStories proof model retains one package-description failure due to residual story-style continuation.
 
@@ -450,7 +451,7 @@ PTQ conversion can be useful for runtime stress tests, but coherent generation r
 - This is a research prototype, not a production LLM runtime.
 - The 30M MLGRU model is a proof model, not a general assistant.
 - TinyStories-trained models produce story-like completions, not broad factual answers.
-- Top-K speed remains experimental at 30M scale; v0.6 has a small local histogram Top-K candidate, not a general sparse speedup.
+- Top-K speed remains experimental; v07b has a 70M local CPU histogram Top-K candidate, not a general sparse speedup.
 - MLGRU mode requires compatible recurrent weights.
 - Larger models, better datasets, and kernel-level sparse optimizations are needed before claiming major speedups.
 
@@ -519,14 +520,16 @@ For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --spa
 - [x] Add 70M parameter estimate and benchmark commands.
 - [x] Train and export `leviathan_mlgru_70m_instruct_v07a`.
 - [x] Run dense and histogram Top-K sweep benchmarks.
-- [ ] Repair QA stability before claiming a 70M sparse candidate.
+- [x] Identify QA repair need before treating v07a as a speed candidate.
 
 ### v0.7b: 70M QA repair fine-tune
 
 - [x] Add v07b QA repair config from the v07a checkpoint.
 - [x] Document v07a failure patterns and v07b benchmark plan.
-- [ ] Train and export `leviathan_mlgru_70m_instruct_v07b`.
-- [ ] Re-run dense QA and histogram down-only sweep.
+- [x] Train and export `leviathan_mlgru_70m_instruct_v07b`.
+- [x] Re-run dense QA and histogram down-only sweep.
+- [x] Document repeat-30 Top-K `0.08` local CPU speed candidate.
+- [ ] Probe 100M scaling.
 
 ### v1.0 target
 
