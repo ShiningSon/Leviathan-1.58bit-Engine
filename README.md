@@ -120,7 +120,8 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |   |-- 03_train_supervised_qa_mlgru_modal_T4.py
 |   |-- 07_finetune_supervised_qa_mlgru_modal_L40S_v02f.py
 |   |-- configs/
-|   |   `-- v07a_70m_mlgru.json
+|   |   |-- v07a_70m_mlgru.json
+|   |   `-- v07b_70m_qa_repair.json
 |   `-- instruction_qa_supervised_v02b.jsonl
 |-- scripts/
 |   `-- benchmark_engine.py
@@ -129,6 +130,7 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |-- docs/
 |   |-- BENCHMARK_AUTOMATION.md
 |   |-- V07A_70M_SCALING_PROBE.md
+|   |-- V07B_70M_QA_REPAIR.md
 |   `-- V02B_SUPERVISED_QA_GUIDE.md
 |-- BENCHMARK.md                      # Current runtime benchmark notes
 |-- LICENSE                           # MIT License
@@ -515,8 +517,16 @@ For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --spa
 
 - [x] Add config-driven 70M MLGRU run path.
 - [x] Add 70M parameter estimate and benchmark commands.
-- [ ] Train and export `leviathan_mlgru_70m_instruct_v07a`.
-- [ ] Run dense and histogram Top-K sweep benchmarks.
+- [x] Train and export `leviathan_mlgru_70m_instruct_v07a`.
+- [x] Run dense and histogram Top-K sweep benchmarks.
+- [ ] Repair QA stability before claiming a 70M sparse candidate.
+
+### v0.7b: 70M QA repair fine-tune
+
+- [x] Add v07b QA repair config from the v07a checkpoint.
+- [x] Document v07a failure patterns and v07b benchmark plan.
+- [ ] Train and export `leviathan_mlgru_70m_instruct_v07b`.
+- [ ] Re-run dense QA and histogram down-only sweep.
 
 ### v1.0 target
 

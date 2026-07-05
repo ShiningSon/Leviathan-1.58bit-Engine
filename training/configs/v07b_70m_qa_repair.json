@@ -1,0 +1,20 @@
+{
+  "run_name": "leviathan_mlgru_70m_instruct_v07b",
+  "dataset": "tinystories",
+  "vocab_size": 8192,
+  "hidden_size": 768,
+  "n_layers": 8,
+  "intermediate_size": 2304,
+  "seq_len": 96,
+  "batch_size": 8,
+  "steps": 800,
+  "lr": 0.000075,
+  "max_train_tokens": 2500000,
+  "tokenizer_docs": 10000,
+  "qa_ratio": 0.95,
+  "qa_seed_path": "/root/instruction_qa_supervised_v02f.jsonl",
+  "base_ckpt_path": "/data/runs/leviathan_mlgru_70m_instruct_v07a/checkpoints/final.pt",
+  "base_tokenizer_dir": "/data/exports/leviathan_mlgru_70m_instruct_v07a/leviathan_mlgru_tokenizer",
+  "training_stage": "v0.7b-70m-qa-repair",
+  "model_display_name": "Leviathan-MLGRU-70M-TinyStories-Instruct-v0.7b"
+}
