@@ -10,7 +10,7 @@ The current direction is:
 3. experiment with ratio-based Top-K activation sparsity;
 4. support an experimental attention-free MLGRU runtime path for recurrent checkpoints trained for that path.
 
-> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, with dense still the default recommendation for the 30M proof model. `leviathan_mlgru_70m_instruct_v07b` is the current 70M local CPU speed candidate: histogram down-projection-only Top-K `0.08` reached 68.54 ms / 254.12 tok/s versus dense 72.85 ms / 238.50 tok/s in repeat-30 interleaved testing, with both modes at 600/600 strict QA. This is an experimental 70M proof-model result, not a general sparse speedup claim.
+> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, with dense still the default recommendation for the 30M proof model. `leviathan_mlgru_70m_instruct_v07b` is the current 70M experimental local CPU speed candidate: histogram down-projection-only Top-K `0.08` reached 68.54 ms / 254.12 tok/s versus dense 72.85 ms / 238.50 tok/s in repeat-30 interleaved testing, with both modes at 600/600 strict QA. This is not a general sparse speedup claim and does not prove the result automatically scales to 100M or larger models. The next target is the v08a 100M scaling probe.
 
 Current v02g model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 
@@ -122,7 +122,8 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |   |-- 07_finetune_supervised_qa_mlgru_modal_L40S_v02f.py
 |   |-- configs/
 |   |   |-- v07a_70m_mlgru.json
-|   |   `-- v07b_70m_qa_repair.json
+|   |   |-- v07b_70m_qa_repair.json
+|   |   `-- v08a_100m_mlgru.json
 |   `-- instruction_qa_supervised_v02b.jsonl
 |-- scripts/
 |   `-- benchmark_engine.py
@@ -132,6 +133,7 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |   |-- BENCHMARK_AUTOMATION.md
 |   |-- V07A_70M_SCALING_PROBE.md
 |   |-- V07B_70M_QA_REPAIR.md
+|   |-- V08A_100M_SCALING_PROBE.md
 |   `-- V02B_SUPERVISED_QA_GUIDE.md
 |-- BENCHMARK.md                      # Current runtime benchmark notes
 |-- LICENSE                           # MIT License
@@ -504,7 +506,8 @@ For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --spa
 - [x] Add experimental no-sort Top-K path.
 - [ ] Reduce Top-K selection overhead further.
 - [ ] Add quality-stable threshold or block sparsity path.
-- [ ] Benchmark 70M/100M models.
+- [x] Benchmark the 70M proof model.
+- [ ] Benchmark the 100M proof model.
 
 ### v0.5: sparse-scope strict QA
 
@@ -512,7 +515,8 @@ For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --spa
 - [x] Add down-proj-only sparse experiment.
 - [x] Add strict QA guards with forbidden keywords and max_words.
 - [ ] Improve sparse kernel throughput.
-- [ ] Validate on 70M/100M models.
+- [x] Validate on the 70M proof model.
+- [ ] Validate on the 100M proof model.
 
 ### v0.7a: 70M MLGRU scaling probe
 
@@ -530,6 +534,14 @@ For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --spa
 - [x] Re-run dense QA and histogram down-only sweep.
 - [x] Document repeat-30 Top-K `0.08` local CPU speed candidate.
 - [ ] Probe 100M scaling.
+
+### v0.8a: 100M MLGRU scaling probe
+
+- [x] Add config-driven 100M MLGRU run path.
+- [x] Add 100M parameter estimate and benchmark commands.
+- [ ] Train and export `leviathan_mlgru_100m_instruct_v08a`.
+- [ ] Run dense QA and histogram down-only sweep.
+- [ ] Decide whether v08b QA repair is needed.
 
 ### v1.0 target
 

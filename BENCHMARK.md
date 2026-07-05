@@ -165,7 +165,7 @@ Current conclusion:
 ```text
 At 30M scale, dense mode is faster because Top-K selection overhead dominates.
 Ratio Top-K preserves readable generation, but it is not yet a speed win at this model size.
-Future work will focus on larger 70M/100M models and a lower-overhead sparse kernel.
+Future work will focus on 100M scaling validation and a lower-overhead sparse kernel.
 ```
 
 ---
@@ -237,6 +237,7 @@ Measure:
 - Down-only Top-K quality preservation.
 - Actual tokens/sec speedup only if measured tokens/sec exceeds dense under the same settings.
 - Larger-model behavior at 100M scale.
+- v08a 100M MLGRU scaling probe behavior with the same strict QA and interleaved benchmark discipline.
 
 ---
 
@@ -543,4 +544,34 @@ Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
 v07b is the first 70M MLGRU proof model where histogram Top-K down-only sparse inference produced a clear local CPU speed candidate while preserving strict QA. In interleaved repeat-30 testing, Top-K 0.08 reached 68.54 ms / 254.12 tok/s versus dense 72.85 ms / 238.50 tok/s, with both modes at 600/600 strict QA.
 
 The latency improvement is about 5.92%, and the tokens/sec improvement is about 6.55%. This is an experimental 70M local CPU result, not a general sparse speedup claim. The next validation target is a 100M scaling probe.
+```
+
+---
+
+## v0.8a 100M MLGRU scaling probe plan
+
+v08a is the next scaling validation target after the v07b 70M result. It is intended to test whether the v07b 70M experimental local CPU speed candidate scales to a 100M-class MLGRU proof model.
+
+```text
+Target model: leviathan_mlgru_100m_instruct_v08a
+Architecture: mlgru
+Vocab size: 8192
+Hidden size: 896
+Layers: 8
+Intermediate size: 3072
+Heads: 1
+KV heads: 1
+Activation: relu2
+Estimated trainable parameters: 99,137,408, about 99.14M
+Config: training/configs/v08a_100m_mlgru.json
+Runbook: docs/V08A_100M_SCALING_PROBE.md
+```
+
+Interpretation rules:
+
+```text
+If dense QA is below 90%, v08a needs v08b QA repair before sparse speed conclusions.
+If dense QA is 90-95%, sparse sweep results should be treated as a scaling signal only.
+If dense QA is 95-100% and Top-K preserves QA while beating dense tokens/sec, v08a becomes the 100M speed candidate.
+Do not claim general sparse speedup, do not claim Top-K is always faster, and do not claim that the v07b result automatically scales to 100M or larger models.
 ```
