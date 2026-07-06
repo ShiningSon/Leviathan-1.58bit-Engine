@@ -29,7 +29,41 @@ Sparse scope: down
 | Top-K `--top-k 0.10` | 68.84 ms | 252.97 tok/s | 600/600 (100.0%) |
 | Top-K `--top-k 0.12` | 69.48 ms | 250.62 tok/s | 600/600 (100.0%) |
 
-v07b is the current 70M experimental local CPU speed candidate. Top-K `0.08` histogram down-only improved tokens/sec by about 6.55% versus dense while preserving strict QA in repeat-30 interleaved testing. This is not a general sparse speedup claim, not a claim that Top-K is always faster, and not proof that the result automatically scales to 100M or larger models.
+v07b is the 70M experimental local CPU speed candidate. Top-K `0.08` histogram down-only improved tokens/sec by about 6.55% versus dense while preserving strict QA in repeat-30 interleaved testing. This is not a general sparse speedup claim, not a claim that Top-K is always faster, and not proof that the result automatically scales to 100M or larger models.
+
+## v08a confirmed repeat-30 result
+
+v08a is the first 100M MLGRU proof model where histogram Top-K down-only sparse inference produced a repeat-30 local CPU speed candidate.
+
+```text
+Architecture: mlgru
+Prompt template: qa
+Max new tokens: 80
+Repeats: 30
+Warmup runs per mode: 1
+Mode schedule: interleave
+Sparse min density: 0.6
+No Top-K sort: True
+Top-K selector: histogram
+Sparse scope: down
+```
+
+| Mode | Avg latency | Avg tokens/sec | Strict QA pass rate |
+|---|---:|---:|---:|
+| Dense `--top-k 0` | 101.15 ms | 176.73 tok/s | 570/600 (95.0%) |
+| Top-K `--top-k 0.06` | 90.39 ms | 191.14 tok/s | 600/600 (100.0%) |
+| Top-K `--top-k 0.08` | 91.13 ms | 189.82 tok/s | 600/600 (100.0%) |
+| Top-K `--top-k 0.10` | 93.45 ms | 189.88 tok/s | 570/600 (95.0%) |
+
+Top-K `0.06` histogram down-only is the current v08a 100M experimental local CPU speed candidate. It improved latency by about 10.64% and tokens/sec by about 8.15% versus dense in this repeat-30 interleaved run. Strict QA improved from 570/600 to 600/600 in the measured run.
+
+Top-K `0.08` also preserved 600/600 QA and improved tokens/sec by about 7.41%. This is a local CPU 100M proof-model result. It is not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to larger models or other hardware.
+
+Known dense limitation:
+
+```text
+Dense mode still shows the familiar package-description failure: "What files are inside a Leviathan MLGRU model package?" It mentions .bin and metadata JSON but misses tokenizer and falls into a TinyStories-style continuation.
+```
 
 ## Target package
 
@@ -139,6 +173,12 @@ If repeat-10 is promising:
 python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_100m_instruct_v08a --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.06 0.08 0.10 0.12 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v08a_100m_histogram_sweep_repeat30
 ```
 
+Confirmed repeat-30 candidate run:
+
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_100m_instruct_v08a --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.06 0.08 0.10 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v08a_100m_histogram_candidate_repeat30
+```
+
 ## Interpretation rules
 
 - If dense QA is below 90%, v08a needs v08b QA repair before sparse speed conclusions.
@@ -147,4 +187,4 @@ python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_100m_instruct_v
 - The best Top-K density may shift lower than `0.08` because `intermediate_size` is larger.
 - Do not claim general sparse speedup.
 - Do not claim that Top-K is always faster.
-- Do not claim that the v07b result automatically scales to 100M or larger models.
+- Do not claim that this result automatically scales to larger models or other hardware.

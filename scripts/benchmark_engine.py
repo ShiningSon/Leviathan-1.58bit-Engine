@@ -296,6 +296,13 @@ def mode_label(mode: str) -> str:
     return f"Top-K `--top-k {mode}`"
 
 
+def is_dense_mode(mode: str) -> bool:
+    try:
+        return float(mode) == 0.0
+    except ValueError:
+        return False
+
+
 def summarize_mode(mode: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
     measured = [run for run in runs if not run["warmup"]]
     prompt_results = [
@@ -349,6 +356,76 @@ def note_for_summary(summary: dict[str, Any]) -> str:
     return "; ".join(notes)
 
 
+def pct_delta(value: float | None, baseline: float | None) -> float | None:
+    if value is None or baseline is None or baseline == 0:
+        return None
+    return ((value - baseline) / baseline) * 100.0
+
+
+def speed_comparison(summary: dict[str, Any], dense_summary: dict[str, Any]) -> str:
+    value = summary["avg_tokens_per_sec"]
+    baseline = dense_summary["avg_tokens_per_sec"]
+    delta = pct_delta(value, baseline)
+    if value is None or baseline is None or delta is None:
+        return "tokens/sec comparison not recorded"
+    if abs(delta) < 0.5:
+        return f"equal/no clear difference versus dense ({fmt_number(value, 'tok/s')} vs {fmt_number(baseline, 'tok/s')}, {delta:+.2f}%)"
+    if delta > 0:
+        return f"faster than dense ({fmt_number(value, 'tok/s')} vs {fmt_number(baseline, 'tok/s')}, {delta:+.2f}%)"
+    return f"slower than dense ({fmt_number(value, 'tok/s')} vs {fmt_number(baseline, 'tok/s')}, {delta:+.2f}%)"
+
+
+def qa_comparison(summary: dict[str, Any], dense_summary: dict[str, Any]) -> str:
+    value = summary["qa_pass_rate"]
+    baseline = dense_summary["qa_pass_rate"]
+    if value is None or baseline is None:
+        return "comparison not recorded"
+    current = fmt_pass_rate(summary)
+    dense = fmt_pass_rate(dense_summary)
+    if value > baseline:
+        return f"higher than dense ({current} vs {dense})"
+    if value < baseline:
+        return f"lower than dense ({current} vs {dense})"
+    return f"preserved versus dense ({current})"
+
+
+def render_interpretation(result: dict[str, Any]) -> list[str]:
+    summaries = [mode_result["summary"] for mode_result in result["modes"]]
+    dense_summary = next((summary for summary in summaries if is_dense_mode(summary["mode"])), None)
+    topk_summaries = [summary for summary in summaries if not is_dense_mode(summary["mode"])]
+
+    lines = ["Interpretation:", ""]
+    if not topk_summaries:
+        lines.append("Only dense mode was measured in this run.")
+    elif dense_summary is None:
+        measured = ", ".join(summary["label"] for summary in topk_summaries)
+        lines.append(f"Measured Top-K modes: {measured}. No dense `--top-k 0` baseline was included, so this report does not compare Top-K speed against dense.")
+    else:
+        lines.append(
+            "Dense baseline: {speed}; QA pass rate {pass_rate}.".format(
+                speed=fmt_number(dense_summary["avg_tokens_per_sec"], "tok/s"),
+                pass_rate=fmt_pass_rate(dense_summary),
+            )
+        )
+        for summary in topk_summaries:
+            lines.append(
+                "- {label}: {speed}; QA pass rate {qa}.".format(
+                    label=summary["label"],
+                    speed=speed_comparison(summary, dense_summary),
+                    qa=qa_comparison(summary, dense_summary),
+                )
+            )
+
+    lines.extend(
+        [
+            "",
+            "Do not claim Top-K speedup unless measured average tokens/sec is actually higher than dense under the same settings.",
+            "",
+        ]
+    )
+    return lines
+
+
 def render_markdown(result: dict[str, Any]) -> str:
     settings = result["settings"]
     lines = [
@@ -381,15 +458,8 @@ def render_markdown(result: dict[str, Any]) -> str:
                 notes=note_for_summary(summary),
             )
         )
-    lines.extend(
-        [
-            "",
-            "Interpretation:",
-            "",
-            "Top-K 0.9 and 0.8 should only be described as preserving tested QA matching if the pass rate remains high. Do not claim Top-K speedup unless measured average tokens/sec is actually higher than dense under the same settings.",
-            "",
-        ]
-    )
+    lines.extend([""])
+    lines.extend(render_interpretation(result))
     return "\n".join(lines)
 
 
