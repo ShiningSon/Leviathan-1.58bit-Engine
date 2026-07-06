@@ -8,7 +8,7 @@ Leviathan benchmark results should be repeatable enough to compare dense mode wi
 
 Use `--prompt-template plain` only for raw continuation experiments. Plain mode can break the QA matching behavior that v0.2b was trained to demonstrate.
 
-Dense mode is the default recommendation for the current v02g 30M proof model. Down-only Top-K preserved strict QA in tested modes, but do not claim Top-K speedup unless the measured average tokens/sec is actually higher than dense under the same settings.
+Dense mode remains the stable default for the published 30M Hugging Face proof package. The current active local speed candidate is v08a 100M with histogram down-only Top-K `0.06`, but do not claim Top-K speedup unless the measured average tokens/sec is actually higher than dense under the same settings.
 
 The v0.2b prompt set has been expanded from the initial 4 prompts to a small 20-prompt regression set. It covers core concepts, runtime modes, prompt-template usage, model packaging, and GitHub/Hugging Face distribution. It is still not a full model evaluation benchmark.
 
@@ -20,11 +20,19 @@ The strict QA prompt schema supports `expected`, `forbidden`, and `max_words`. R
 
 For sparse-scope checks, use `--sparse-scope down` to restrict Top-K sparsity to the down projection while keeping recurrent/state projections dense.
 
-For v0.6 speed-candidate checks, use `--top-k-select histogram` with `--mode-schedule interleave` so dense and Top-K modes are alternated by repeat instead of measured in large mode blocks. Treat any 30M result as an experimental local CPU candidate until it is repeated on larger models and additional hardware.
+For v0.6 and later speed-candidate checks, use `--top-k-select histogram` with `--mode-schedule interleave` so dense and Top-K modes are alternated by repeat instead of measured in large mode blocks. Treat each result as experimental and local-CPU-specific until it is repeated on additional hardware and larger models.
 
 ## CMD examples
 
 From the repository root:
+
+Current v08a 100M candidate check:
+
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_100m_instruct_v08a --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.06 0.08 0.10 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v08a_100m_histogram_candidate_repeat30
+```
+
+Historical high-density fallback check:
 
 ```cmd
 python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02b --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.9 0.8 0.5 --repeat 3 --sparse-min-density 0.6 --out-dir .\benchmark_runs\v04_sparse_fallback
@@ -44,7 +52,7 @@ python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v0
 
 v02g dense strict QA example:
 
-Current uploaded v02g HF package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
+Published 30M v02g HF package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 
 ```cmd
 python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02g --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 --repeat 10 --out-dir .\benchmark_runs\v02g_dense_strict_qa
@@ -60,6 +68,12 @@ v0.6 histogram Top-K interleaved candidate example:
 
 ```cmd
 python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_30m_instruct_v02g --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.12 --repeat 50 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v06_histogram_topk_candidate
+```
+
+v07b 70M candidate example:
+
+```cmd
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_70m_instruct_v07b --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.08 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v07b_70m_histogram_candidate_repeat30
 ```
 
 By default, the runner performs one warmup run per mode before the measured repeats. Change this with `--warmup 0` or another integer.
@@ -88,4 +102,4 @@ Do not copy generated files from `benchmark_runs/` into Git history. The folder 
 
 ## Top-K interpretation
 
-Top-K `0.9` and `0.8` should only be described as preserving tested QA matching if the pass rate remains high on the measured prompt set. Do not claim Top-K speedup unless measured average tokens/sec is actually higher than dense under the same architecture, prompt template, max-new setting, prompt set, and repeat count.
+`results.md` now generates its interpretation from the actual `--modes` used for the run. When dense `--top-k 0` is present, every nonzero Top-K mode is compared against dense for tokens/sec, latency, and QA pass rate. Do not claim Top-K speedup unless measured average tokens/sec is actually higher than dense under the same architecture, prompt template, max-new setting, prompt set, and repeat count.

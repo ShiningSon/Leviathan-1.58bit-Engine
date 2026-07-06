@@ -29,7 +29,7 @@ Sparse scope: down
 | Top-K `--top-k 0.10` | 68.84 ms | 252.97 tok/s | 600/600 (100.0%) |
 | Top-K `--top-k 0.12` | 69.48 ms | 250.62 tok/s | 600/600 (100.0%) |
 
-v07b is the 70M experimental local CPU speed candidate. Top-K `0.08` histogram down-only improved tokens/sec by about 6.55% versus dense while preserving strict QA in repeat-30 interleaved testing. This is not a general sparse speedup claim, not a claim that Top-K is always faster, and not proof that the result automatically scales to 100M or larger models.
+v07b is the 70M experimental local CPU speed candidate. Top-K `0.08` histogram down-only improved tokens/sec by about 6.55% versus dense while preserving strict QA in repeat-30 interleaved testing. This is not a general sparse speedup claim, not a claim that Top-K is always faster, and not proof that similar results automatically scale to larger models or other hardware.
 
 ## v08a confirmed repeat-30 result
 
@@ -188,3 +188,6 @@ python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_100m_instruct_v
 - Do not claim general sparse speedup.
 - Do not claim that Top-K is always faster.
 - Do not claim that this result automatically scales to larger models or other hardware.
+- Next target: 150M/200M-class MLGRU scaling and additional CPU hardware.
+- Prefer a 200M-class target unless dry-run, VRAM, or cost says otherwise.
+- At 200M+ scale, QA/instruction data likely needs to expand beyond TinyStories plus the small project QA seed.

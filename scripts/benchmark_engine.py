@@ -375,6 +375,19 @@ def speed_comparison(summary: dict[str, Any], dense_summary: dict[str, Any]) -> 
     return f"slower than dense ({fmt_number(value, 'tok/s')} vs {fmt_number(baseline, 'tok/s')}, {delta:+.2f}%)"
 
 
+def latency_comparison(summary: dict[str, Any], dense_summary: dict[str, Any]) -> str:
+    value = summary["avg_latency_ms"]
+    baseline = dense_summary["avg_latency_ms"]
+    delta = pct_delta(value, baseline)
+    if value is None or baseline is None or delta is None:
+        return "latency comparison not recorded"
+    if abs(delta) < 0.5:
+        return f"equal/no clear difference versus dense ({fmt_number(value, 'ms')} vs {fmt_number(baseline, 'ms')}, {delta:+.2f}%)"
+    if delta < 0:
+        return f"lower than dense ({fmt_number(value, 'ms')} vs {fmt_number(baseline, 'ms')}, {delta:+.2f}%)"
+    return f"higher than dense ({fmt_number(value, 'ms')} vs {fmt_number(baseline, 'ms')}, {delta:+.2f}%)"
+
+
 def qa_comparison(summary: dict[str, Any], dense_summary: dict[str, Any]) -> str:
     value = summary["qa_pass_rate"]
     baseline = dense_summary["qa_pass_rate"]
@@ -409,9 +422,10 @@ def render_interpretation(result: dict[str, Any]) -> list[str]:
         )
         for summary in topk_summaries:
             lines.append(
-                "- {label}: {speed}; QA pass rate {qa}.".format(
+                "- {label}: {speed}; latency {latency}; QA pass rate {qa}.".format(
                     label=summary["label"],
                     speed=speed_comparison(summary, dense_summary),
+                    latency=latency_comparison(summary, dense_summary),
                     qa=qa_comparison(summary, dense_summary),
                 )
             )

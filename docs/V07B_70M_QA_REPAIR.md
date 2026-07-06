@@ -72,9 +72,9 @@ Sparse scope: down
 | Top-K `--top-k 0.10` | 68.84 ms | 252.97 tok/s | 600/600 (100.0%) |
 | Top-K `--top-k 0.12` | 69.48 ms | 250.62 tok/s | 600/600 (100.0%) |
 
-Top-K `0.08` histogram down-only is the current v07b 70M experimental local CPU speed candidate. It improved latency by about 5.92% and tokens/sec by about 6.55% versus dense in this repeat-30 interleaved run while preserving the measured strict QA pass rate.
+Top-K `0.08` histogram down-only was the v07b 70M experimental local CPU speed candidate. It improved latency by about 5.92% and tokens/sec by about 6.55% versus dense in this repeat-30 interleaved run while preserving the measured strict QA pass rate.
 
-This is a local CPU 70M proof-model result. It is not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to 100M or larger models.
+This is a local CPU 70M proof-model result. It is not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to larger models or other hardware. The current top active local candidate is now v08a 100M with histogram down-only Top-K `0.06`.
 
 ## Config
 
@@ -160,5 +160,5 @@ python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_70m_instruct_v0
 - Treat v07b as a QA repair proof model, not a general assistant.
 - Use `--prompt-template qa` for project-specific QA checks.
 - Do not claim sparse speedup unless Top-K preserves dense QA and measured tokens/sec exceeds dense under the same benchmark settings.
-- Do not claim that Top-K is always faster or that this result automatically scales to 100M or larger models.
+- Do not claim that Top-K is always faster or that this result automatically scales to larger models or other hardware.
 - Do not upload v07b to Hugging Face until the package and benchmark are reviewed.

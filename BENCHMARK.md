@@ -165,7 +165,7 @@ Current conclusion:
 ```text
 At 30M scale, dense mode is faster because Top-K selection overhead dominates.
 Ratio Top-K preserves readable generation, but it is not yet a speed win at this model size.
-Future work will focus on 100M scaling validation and a lower-overhead sparse kernel.
+Future work will focus on 150M/200M-class scaling validation, additional CPU hardware, and lower-overhead sparse kernels.
 ```
 
 ---
@@ -185,7 +185,7 @@ Outcome:
 - v02b established the supervised QA proof route.
 - v02c and v02d were not successful final candidates.
 - v02e/v02f/v02g checkpoint fine-tuning restored strict QA to 95.0%.
-- Current final proof-model candidate: `Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g`.
+- Current published 30M Hugging Face proof package: `Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g`.
 
 ### Completed: v0.3 automated benchmark script
 
@@ -226,8 +226,8 @@ Current findings:
 
 - v07a showed a 70M sparse scaling signal but only reached 170/200 strict QA, so it was not a valid speed candidate.
 - v07b repaired strict QA to 600/600 in repeat-30 testing.
-- On the v07b 70M proof model, histogram down-only Top-K `0.08` is the current experimental local CPU speed candidate.
-- This is not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to 100M or larger models.
+- On the v07b 70M proof model, histogram down-only Top-K `0.08` is the confirmed 70M experimental local CPU speed candidate.
+- This is not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to larger models or other hardware.
 
 ### Completed/active: v0.8a 100M scaling validation
 
@@ -245,26 +245,22 @@ Measure:
 - Down-only Top-K quality preservation.
 - Actual tokens/sec speedup only if measured tokens/sec exceeds dense under the same settings.
 - Additional hardware behavior.
-- Larger-model behavior beyond the current 100M proof model.
+- 150M/200M-class behavior beyond the current 100M proof model.
 
 ---
 
 ## Current recommendation
 
-For the current v02g 30M instruct proof model:
-
 ```text
-Use dense MLGRU mode (--top-k 0) for the default speed/quality baseline.
-Treat histogram down-only Top-K 0.12 as an experimental 30M speed candidate.
-Do not claim general sparse speedup from this 30M local CPU result.
-```
+For the published 30M Hugging Face package, dense remains the stable default. Histogram down-only Top-K 0.12 is a small experimental local CPU candidate from the v0.6 benchmark.
 
-For future scaling:
+For the 70M local package, histogram down-only Top-K 0.08 is the confirmed v07b local CPU candidate.
 
-```text
-Retest Top-K on 100M models after sparse-kernel optimization and lower-overhead Top-K selection.
-Only claim sparse speedup if measured tokens/sec is higher than dense under the same benchmark settings.
-Do not assume the 30M or 70M candidate result automatically scales to larger models.
+For the 100M local package, histogram down-only Top-K 0.06 is the current confirmed v08a local CPU candidate.
+
+All three Top-K candidates are experimental and local-CPU-specific. Do not claim general sparse speedup, do not claim Top-K is always faster, and do not assume the results automatically scale to larger models or other hardware.
+
+The next scaling target is a 150M/200M-class MLGRU probe, with 200M preferred unless dry-run, VRAM, or cost says otherwise. At 200M+ scale, the QA/instruction data should likely expand beyond TinyStories plus the small project QA seed.
 ```
 
 ---
@@ -418,7 +414,7 @@ This historical v0.5 run showed a latency-positive signal for down-proj-only Top
 
 ## v0.2g final proof-model candidate strict QA benchmark
 
-`leviathan_mlgru_30m_instruct_v02g` is the current final TinyStories instruct proof-model candidate for the Leviathan MLGRU path. It is still a small proof model for validating training, export, and local CPU runtime behavior; it is not a general assistant.
+`leviathan_mlgru_30m_instruct_v02g` is the published 30M Hugging Face proof package for the Leviathan MLGRU path. It is still a small proof model for validating training, export, and local CPU runtime behavior; it is not a general assistant and is no longer the top active local speed candidate.
 
 ```text
 Model: Leviathan-MLGRU-30M-TinyStories-Instruct-v0.2g
@@ -509,7 +505,7 @@ Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
 ```text
 v0.6 adds an experimental histogram Top-K selector and interleaved benchmark scheduling. On the v02g 30M MLGRU proof model, down-projection-only Top-K at density 0.12 produced a small local CPU speed candidate in repeat-50 interleaved testing: 50.25 ms / 354.17 tok/s versus dense 50.74 ms / 350.97 tok/s, while preserving strict QA at 950/1000 (95.0%).
 
-The latency improvement is about 0.97%, and the tokens/sec improvement is about 0.91%. This is a 30M experimental result, not a general sparse speedup claim. The later v07b benchmark below is the 70M follow-up; the next validation target is a 100M scaling probe under the same strict QA and interleaved scheduling discipline.
+The latency improvement is about 0.97%, and the tokens/sec improvement is about 0.91%. This is a 30M experimental result, not a general sparse speedup claim. The later v07b and v08a benchmarks below are the 70M and 100M follow-ups; the next validation target is a 150M/200M-class scaling probe under the same strict QA and interleaved scheduling discipline.
 ```
 
 Known limitation:
@@ -522,7 +518,7 @@ The same package-description prompt remains the known QA failure: "What files ar
 
 ## v0.7b 70M histogram Top-K speed candidate
 
-This benchmark records the first 70M MLGRU proof model where histogram Top-K down-only sparse inference produced a clear local CPU speed candidate while preserving strict QA. It is a local CPU proof-model result, not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to 100M or larger models.
+This benchmark records the first 70M MLGRU proof model where histogram Top-K down-only sparse inference produced a clear local CPU speed candidate while preserving strict QA. It is a local CPU proof-model result, not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to larger models or other hardware.
 
 ```text
 Automated benchmark: leviathan_mlgru_70m_instruct_v07b
@@ -542,7 +538,7 @@ Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
 | Mode | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
 |---|---:|---:|---:|---|
 | Dense `--top-k 0` | 72.85 ms | 238.50 tok/s | 600/600 (100.0%) | Dense baseline in repeat-30 interleaved run |
-| Top-K `--top-k 0.08` histogram down-only | 68.54 ms | 254.12 tok/s | 600/600 (100.0%) | Current v07b 70M experimental local CPU speed candidate |
+| Top-K `--top-k 0.08` histogram down-only | 68.54 ms | 254.12 tok/s | 600/600 (100.0%) | Confirmed v07b 70M experimental local CPU speed candidate |
 | Top-K `--top-k 0.10` histogram down-only | 68.84 ms | 252.97 tok/s | 600/600 (100.0%) | Preserved strict QA; slower than Top-K 0.08 in this run |
 | Top-K `--top-k 0.12` histogram down-only | 69.48 ms | 250.62 tok/s | 600/600 (100.0%) | Preserved strict QA; slower than Top-K 0.08 in this run |
 
@@ -551,14 +547,14 @@ Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
 ```text
 v07b is the first 70M MLGRU proof model where histogram Top-K down-only sparse inference produced a clear local CPU speed candidate while preserving strict QA. In interleaved repeat-30 testing, Top-K 0.08 reached 68.54 ms / 254.12 tok/s versus dense 72.85 ms / 238.50 tok/s, with both modes at 600/600 strict QA.
 
-The latency improvement is about 5.92%, and the tokens/sec improvement is about 6.55%. This is an experimental 70M local CPU result, not a general sparse speedup claim. The next validation target is a 100M scaling probe.
+The latency improvement is about 5.92%, and the tokens/sec improvement is about 6.55%. This is an experimental 70M local CPU result, not a general sparse speedup claim. The v08a benchmark below is the 100M follow-up, and the next scaling target is 150M/200M-class validation.
 ```
 
 ---
 
 ## v0.8a 100M MLGRU scaling probe
 
-v08a is the 100M scaling validation target after the v07b 70M result. The repeat-30 benchmark below records the current 100M experimental local CPU speed candidate.
+v08a is the completed 100M scaling validation target after the v07b 70M result. The repeat-30 benchmark below records the current 100M experimental local CPU speed candidate.
 
 ```text
 Target model: leviathan_mlgru_100m_instruct_v08a
@@ -581,7 +577,7 @@ Original interpretation rules:
 If dense QA is below 90%, v08a needs v08b QA repair before sparse speed conclusions.
 If dense QA is 90-95%, sparse sweep results should be treated as a scaling signal only.
 If dense QA is 95-100% and Top-K preserves QA while beating dense tokens/sec, v08a becomes the 100M speed candidate.
-Do not claim general sparse speedup, do not claim Top-K is always faster, and do not claim that the v07b result automatically scales to 100M or larger models.
+Do not claim general sparse speedup, do not claim Top-K is always faster, and do not claim that one local CPU result automatically scales to larger models or other hardware.
 ```
 
 ---
