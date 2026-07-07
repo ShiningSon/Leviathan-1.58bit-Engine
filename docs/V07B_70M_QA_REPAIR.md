@@ -2,7 +2,7 @@
 
 This is a 70M QA repair fine-tune path for `leviathan_mlgru_70m_instruct_v07b`. It starts from the v07a 70M checkpoint and increases supervised QA emphasis before another sparse validation pass.
 
-This remains a Leviathan proof-model path, not a general assistant. v07b is now ready for Hugging Face publication as an experimental Leviathan runtime package. Do not modify the v07a package, and do not claim sparse speedup from v07a because its dense QA benchmark is only 85.0%.
+This remains a Leviathan proof-model path, not a general assistant. v07b is published on Hugging Face as an experimental Leviathan runtime package. Do not modify the v07a package, and do not claim sparse speedup from v07a because its dense QA benchmark is only 85.0%.
 
 ## v07a summary
 

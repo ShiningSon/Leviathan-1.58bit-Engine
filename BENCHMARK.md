@@ -258,7 +258,7 @@ For the 70M local package, histogram down-only Top-K 0.08 is the confirmed v07b 
 
 For the 100M local package, histogram down-only Top-K 0.06 is the current confirmed v08a local CPU candidate.
 
-The v07b 70M and v08a 100M packages are publication-ready experimental Leviathan proof packages for Hugging Face, pending upload confirmation:
+The v07b 70M and v08a 100M packages are published experimental Leviathan proof packages on Hugging Face:
 
 ```text
 ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b

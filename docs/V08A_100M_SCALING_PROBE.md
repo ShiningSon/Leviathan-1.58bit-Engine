@@ -2,7 +2,7 @@
 
 This is the first 100M-class scaling probe for the Leviathan MLGRU path. It tests whether the v07b 70M experimental local CPU speed candidate scales to a larger MLGRU proof model.
 
-This is a scaling probe, not a final model and not a general assistant. v08a is now ready for Hugging Face publication as an experimental Leviathan runtime package, but do not claim general sparse speedup from v08a unless strict QA and measured throughput support it.
+This is a scaling probe, not a final model and not a general assistant. v08a is published on Hugging Face as an experimental Leviathan runtime package, but do not claim general sparse speedup from v08a unless strict QA and measured throughput support it.
 
 ## Current baseline
 
