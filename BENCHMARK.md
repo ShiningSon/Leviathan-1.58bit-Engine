@@ -258,6 +258,13 @@ For the 70M local package, histogram down-only Top-K 0.08 is the confirmed v07b 
 
 For the 100M local package, histogram down-only Top-K 0.06 is the current confirmed v08a local CPU candidate.
 
+The v07b 70M and v08a 100M packages are publication-ready experimental Leviathan proof packages for Hugging Face, pending upload confirmation:
+
+```text
+ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b
+ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a
+```
+
 All three Top-K candidates are experimental and local-CPU-specific. Do not claim general sparse speedup, do not claim Top-K is always faster, and do not assume the results automatically scale to larger models or other hardware.
 
 The next scaling target is a 150M/200M-class MLGRU probe, with 200M preferred unless dry-run, VRAM, or cost says otherwise. At 200M+ scale, the QA/instruction data should likely expand beyond TinyStories plus the small project QA seed.

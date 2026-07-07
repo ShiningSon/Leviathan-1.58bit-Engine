@@ -2,7 +2,7 @@
 
 This is a 70M QA repair fine-tune path for `leviathan_mlgru_70m_instruct_v07b`. It starts from the v07a 70M checkpoint and increases supervised QA emphasis before another sparse validation pass.
 
-This remains a Leviathan proof-model path, not a general assistant. Do not upload v07b to Hugging Face, do not modify the v07a package, and do not claim sparse speedup from v07a because its dense QA benchmark is only 85.0%.
+This remains a Leviathan proof-model path, not a general assistant. v07b is now ready for Hugging Face publication as an experimental Leviathan runtime package. Do not modify the v07a package, and do not claim sparse speedup from v07a because its dense QA benchmark is only 85.0%.
 
 ## v07a summary
 
@@ -161,4 +161,4 @@ python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_70m_instruct_v0
 - Use `--prompt-template qa` for project-specific QA checks.
 - Do not claim sparse speedup unless Top-K preserves dense QA and measured tokens/sec exceeds dense under the same benchmark settings.
 - Do not claim that Top-K is always faster or that this result automatically scales to larger models or other hardware.
-- Do not upload v07b to Hugging Face until the package and benchmark are reviewed.
+- Publish v07b only as an experimental Leviathan runtime package, not as a general assistant or Transformers-compatible checkpoint.

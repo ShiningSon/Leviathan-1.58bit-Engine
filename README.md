@@ -14,7 +14,12 @@ The current direction is:
 
 Published 30M Hugging Face proof package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 
-`leviathan_mlgru_100m_instruct_v08a` is currently a local/exported proof package and should not be described as a published Hugging Face model yet.
+Ready for Hugging Face publication, pending upload confirmation:
+
+- Planned/ready 70M Hugging Face package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b
+- Planned/ready 100M Hugging Face package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a
+
+Until upload is confirmed, `leviathan_mlgru_70m_instruct_v07b` and `leviathan_mlgru_100m_instruct_v08a` should be described as local/exported proof packages that are ready for publication.
 
 ---
 
@@ -430,12 +435,17 @@ Published Hugging Face packages:
 - Earlier v0.2b QA proof model: [ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b)
 - Historical v0.1 TinyStories proof model: [ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
 
-Current local/exported candidates:
+Ready for Hugging Face publication:
+
+- Planned/ready 70M v07b proof package: [ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b)
+- Planned/ready 100M v08a proof package: [ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a](https://huggingface.co/ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a)
+
+Current local/exported speed candidates:
 
 - `leviathan_mlgru_70m_instruct_v07b`: local 70M proof package and confirmed local CPU speed candidate.
 - `leviathan_mlgru_100m_instruct_v08a`: local 100M proof package and current active local CPU speed candidate.
 
-Do not describe v07b or v08a as Hugging Face-published packages unless they are explicitly uploaded and reviewed.
+After upload is confirmed, move v07b and v08a from planned/ready wording to the published package list.
 
 Suggested files for the published v02g package:
 
