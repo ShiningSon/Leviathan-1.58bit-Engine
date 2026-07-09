@@ -156,7 +156,8 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |   |-- configs/
 |   |   |-- v07a_70m_mlgru.json
 |   |   |-- v07b_70m_qa_repair.json
-|   |   `-- v08a_100m_mlgru.json
+|   |   |-- v08a_100m_mlgru.json
+|   |   `-- v09a_200m_mlgru.json
 |   `-- instruction_qa_supervised_v02b.jsonl
 |-- scripts/
 |   `-- benchmark_engine.py
@@ -167,6 +168,7 @@ Modal training -> fake ternary/QAT-style model -> Leviathan v2 export -> local C
 |   |-- V07A_70M_SCALING_PROBE.md
 |   |-- V07B_70M_QA_REPAIR.md
 |   |-- V08A_100M_SCALING_PROBE.md
+|   |-- V09A_200M_SCALING_PROBE.md
 |   `-- V02B_SUPERVISED_QA_GUIDE.md
 |-- BENCHMARK.md                      # Current runtime benchmark notes
 |-- LICENSE                           # MIT License
@@ -568,13 +570,16 @@ For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --spa
 - [x] Document repeat-30 Top-K `0.06` local CPU speed candidate.
 - [ ] Test on additional hardware.
 
-### v0.9: 150M/200M MLGRU scaling probe
+### v0.9a: 200M MLGRU scaling probe
 
-- [ ] Add config-driven 150M/200M MLGRU run path.
-- [ ] Prefer a 200M-class MLGRU target unless dry-run, VRAM, or cost says otherwise.
+- [x] Add config-driven 200M MLGRU run path.
+- [x] Add 200M parameter estimate and benchmark commands.
+- [ ] Dry-run `leviathan_mlgru_200m_instruct_v09a`.
+- [ ] Train and export `leviathan_mlgru_200m_instruct_v09a`.
 - [ ] Expand QA/instruction data beyond TinyStories plus the small project QA seed.
-- [ ] Run dense QA and histogram down-only sweep on the selected larger model.
+- [ ] Run dense QA and histogram down-only sweep on v09a.
 - [ ] Test on additional CPU hardware.
+- [ ] Defer 1B-class work until 150M/200M behavior is measured and reviewed.
 
 ### v1.0 target
 

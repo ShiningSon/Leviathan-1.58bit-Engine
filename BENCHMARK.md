@@ -267,8 +267,23 @@ ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a
 
 All three Top-K candidates are experimental and local-CPU-specific. Do not claim general sparse speedup, do not claim Top-K is always faster, and do not assume the results automatically scale to larger models or other hardware.
 
-The next scaling target is a 150M/200M-class MLGRU probe, with 200M preferred unless dry-run, VRAM, or cost says otherwise. At 200M+ scale, the QA/instruction data should likely expand beyond TinyStories plus the small project QA seed.
+The next scaling target is v09a, a 200M-class MLGRU probe configured as `leviathan_mlgru_200m_instruct_v09a`. At 200M+ scale, the QA/instruction data should likely expand beyond TinyStories plus the small project QA seed.
 ```
+
+Planned v09a target:
+
+```text
+Model: leviathan_mlgru_200m_instruct_v09a
+Architecture: mlgru
+Hidden size: 1280
+Layers: 10
+Intermediate size: 4096
+Estimated trainable parameters: 233,388,800, about 233.39M
+Config: training/configs/v09a_200m_mlgru.json
+Runbook: docs/V09A_200M_SCALING_PROBE.md
+```
+
+No v09a result table is included yet because the model has not been trained or benchmarked. Do not claim v09a speedup before dense QA and histogram down-only benchmarks exist.
 
 ---
 
