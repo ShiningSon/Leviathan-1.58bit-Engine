@@ -10,14 +10,15 @@ The current direction is:
 3. experiment with ratio-based Top-K activation sparsity;
 4. support an experimental attention-free MLGRU runtime path for recurrent checkpoints trained for that path.
 
-> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, with dense still the default recommendation for the 30M proof model. `leviathan_mlgru_100m_instruct_v08a` is the current 100M experimental local CPU speed candidate: histogram down-projection-only Top-K `0.06` reached 90.39 ms / 191.14 tok/s versus dense 101.15 ms / 176.73 tok/s in repeat-30 interleaved testing, with QA improving from 570/600 to 600/600 in the measured run. This is not a general sparse speedup claim, not a claim that Top-K is always faster, and not proof that the result automatically scales to larger models or other hardware.
+> Status: research prototype. The dense ternary CPU path and MLGRU export path are working. Ratio Top-K is implemented, with dense still the default recommendation for the 30M proof model. `leviathan_mlgru_200m_instruct_v09a` is the current active local CPU speed candidate: histogram down-projection-only Top-K `0.10` reached 175.33 ms / 97.54 tok/s versus dense 193.92 ms / 88.30 tok/s in repeat-30 interleaved testing, with both modes preserving strict QA at 600/600. Previous confirmed candidates are 100M v08a, 70M v07b, and 30M v0.6/v02g. v09a is publication-ready for Hugging Face packaging unless already uploaded separately. This is not a general sparse speedup claim, not a claim that Top-K is always faster, and not proof that the result automatically scales to larger models or other hardware.
 
 Published 30M Hugging Face proof package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
 
-Published larger Hugging Face proof packages:
+Larger Hugging Face proof packages and publication targets:
 
 - Published 70M Hugging Face package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b
 - Published 100M Hugging Face package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a
+- Publication-ready 200M package target: https://huggingface.co/ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a
 
 ---
 
@@ -49,6 +50,7 @@ Leviathan supports Top-K activation sparsity through `--top-k`.
 Current sparse-scope examples:
 
 ```bash
+--top-k 0.10 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort
 --top-k 0.06 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort
 --top-k 0.08 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort
 --top-k 0.12 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort
@@ -56,11 +58,12 @@ Current sparse-scope examples:
 
 Density guide:
 
-- `0.06` is the current v08a 100M candidate density.
+- `0.10` is the current v09a 200M candidate density.
+- `0.06` is the v08a 100M candidate density.
 - `0.08` is the v07b 70M candidate density.
 - `0.12` is the v0.6 30M candidate density.
 
-These densities are measured candidates for specific proof-model packages and local CPU runs. `0.06` is not a universal best Top-K setting.
+These densities are measured candidates for specific proof-model packages and local CPU runs. `0.10` is not a universal best Top-K setting.
 
 The important change is that fractional values are treated as **per-layer density ratios** rather than fixed absolute K values.
 This avoids the failure mode where a fixed K is acceptable for narrow projections but destroys wide FFN projections.
@@ -79,7 +82,8 @@ Current benchmark result:
 - Dense mode remains the default recommendation at 30M scale.
 - v0.6 histogram Top-K `0.12` with `--sparse-scope down` produced a small local CPU speed candidate in repeat-50 interleaved testing while preserving strict QA at 95.0%.
 - v07b 70M histogram Top-K `0.08` with `--sparse-scope down` is the confirmed 70M experimental local CPU speed candidate: 68.54 ms / 254.12 tok/s versus dense 72.85 ms / 238.50 tok/s, with both modes at 600/600 strict QA in repeat-30 interleaved testing.
-- v08a 100M histogram Top-K `0.06` with `--sparse-scope down` is the current experimental local CPU speed candidate: 90.39 ms / 191.14 tok/s versus dense 101.15 ms / 176.73 tok/s, with QA improving from 570/600 to 600/600 in repeat-30 interleaved testing.
+- v08a 100M histogram Top-K `0.06` with `--sparse-scope down` is the confirmed 100M experimental local CPU speed candidate: 90.39 ms / 191.14 tok/s versus dense 101.15 ms / 176.73 tok/s, with QA improving from 570/600 to 600/600 in repeat-30 interleaved testing.
+- v09a 200M histogram Top-K `0.10` with `--sparse-scope down` is the current active experimental local CPU speed candidate: 175.33 ms / 97.54 tok/s versus dense 193.92 ms / 88.30 tok/s, with both modes at 600/600 strict QA in repeat-30 interleaved testing.
 - Top-K is currently a scaling and kernel-optimization path, not a guaranteed speedup for every model size.
 
 v0.4 guardrail:
@@ -92,7 +96,7 @@ python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --
 
 `--no-top-k-sort` is experimental. It skips the final index sort after Top-K selection. It can reduce selection overhead, but low-density settings may degrade output quality. It is disabled by default.
 
-`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. With the histogram selector, v08a down-only Top-K `0.06` is the current 100M experimental local CPU speed candidate, but it is not a general sparse speedup claim and does not automatically scale to larger models or other hardware.
+`--sparse-scope down` is experimental. It restricts Top-K sparsity to the down projection while keeping recurrent/state projections dense. With the histogram selector, v09a down-only Top-K `0.10` is the current 200M experimental local CPU speed candidate, but it is not a general sparse speedup claim and does not automatically scale to larger models or other hardware.
 
 See [`BENCHMARK.md`](BENCHMARK.md) for the current numbers.
 
@@ -124,16 +128,16 @@ Published 30M instruct proof package:
 - dense strict QA: 190/200 keyword-guarded passes, or 95.0%
 - known limitation: one package-description prompt still shows residual TinyStories-style continuation
 
-Current active 100M speed candidate:
+Current active 200M speed candidate:
 
-- `leviathan_mlgru_100m_instruct_v08a`
+- `leviathan_mlgru_200m_instruct_v09a`
 - architecture: `mlgru`
-- hidden size: 896
-- layers: 8
-- intermediate size: 3072
-- estimated trainable parameters: about 99.14M
-- status: published 100M Hugging Face proof package and current local CPU speed candidate, not a general assistant
-- current candidate setting: `--top-k 0.06 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort`
+- hidden size: 1280
+- layers: 10
+- intermediate size: 4096
+- estimated trainable parameters: about 233.39M
+- status: publication-ready 200M proof package and current active local CPU speed candidate, not a general assistant
+- current candidate setting: `--top-k 0.10 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort`
 
 The early proof models are intentionally small. They validate the full route:
 
@@ -211,7 +215,7 @@ python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json
 Run with the current sparse-scope Top-K style:
 
 ```bash
-python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 0.06 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort
+python engine.py --bin leviathan_native.bin --meta leviathan_native_meta.json --top-k 0.10 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort
 ```
 
 Historical high-density and legacy absolute-K checks:
@@ -352,7 +356,7 @@ Uploaded Hugging Face package:
 
 Dense strict QA reached 190/200 passes, or 95.0%, in the local benchmark. Earlier v02e down-only Top-K modes preserved the same strict QA pass rate, but dense remained faster in that comparison. In v0.6, histogram down-only Top-K `0.12` became the current experimental 30M speed candidate in repeat-50 interleaved testing: 50.25 ms / 354.17 tok/s versus dense 50.74 ms / 350.97 tok/s, with strict QA unchanged at 950/1000 (95.0%). This is not a general sparse speedup claim.
 
-For sparse-scope speed-candidate experiments, `--sparse-scope down --top-k 0.12 --sparse-min-density 0.6 --no-top-k-sort --top-k-select histogram` is the 30M experimental setting. The v07b 70M candidate uses histogram down-only Top-K `0.08`; the v08a 100M candidate uses histogram down-only Top-K `0.06`. Broader validation still needs additional hardware and larger-model checks.
+For sparse-scope speed-candidate experiments, `--sparse-scope down --top-k 0.12 --sparse-min-density 0.6 --no-top-k-sort --top-k-select histogram` is the 30M experimental setting. The v07b 70M candidate uses histogram down-only Top-K `0.08`; the v08a 100M candidate uses `0.06`; the current v09a 200M candidate uses `0.10`. Broader validation still needs additional hardware checks.
 
 Known limitation: the v02g TinyStories proof model retains one package-description failure due to residual story-style continuation.
 
@@ -406,16 +410,17 @@ Then unzip and run the model locally with `engine.py`.
 Current winner:
 
 ```text
-v08a 100M Top-K 0.06 histogram down-only
+v09a 200M Top-K 0.10 histogram down-only
 ```
 
 | Model | Dense result | Best Top-K result | QA | Interpretation |
 |---|---:|---:|---:|---|
 | 30M v0.6 / v02g route | 50.74 ms / 350.97 tok/s | Top-K `0.12` histogram down-only: 50.25 ms / 354.17 tok/s | 950/1000 (95.0%) both modes | Small local CPU speed candidate; v02g remains the published 30M HF proof package |
 | 70M v07b | 72.85 ms / 238.50 tok/s | Top-K `0.08` histogram down-only: 68.54 ms / 254.12 tok/s | 600/600 (100.0%) both modes | Stronger 70M local CPU candidate |
-| 100M v08a | 101.15 ms / 176.73 tok/s | Top-K `0.06` histogram down-only: 90.39 ms / 191.14 tok/s | Dense 570/600 (95.0%); Top-K 600/600 (100.0%) | Current active local CPU speed candidate |
+| 100M v08a | 101.15 ms / 176.73 tok/s | Top-K `0.06` histogram down-only: 90.39 ms / 191.14 tok/s | Dense 570/600 (95.0%); Top-K 600/600 (100.0%) | Confirmed 100M local CPU speed candidate |
+| 200M v09a | 193.92 ms / 88.30 tok/s | Top-K `0.10` histogram down-only: 175.33 ms / 97.54 tok/s | 600/600 (100.0%) both modes | Confirmed 200M local CPU speed candidate; +10.46% tok/s |
 
-The scaling pattern is encouraging but still narrow: 30M produced a small candidate, 70M produced a stronger candidate, and 100M currently has the strongest repeat-30 candidate. These are local CPU proof-model results, not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to larger models or other hardware.
+The scaling pattern is encouraging but still narrow: 30M produced a small candidate, 70M produced a stronger candidate, 100M strengthened the signal, and 200M is the current active repeat-30 candidate. These are local CPU proof-model results, not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to larger models or other hardware.
 
 See [`BENCHMARK.md`](BENCHMARK.md) for details.
 
@@ -431,18 +436,20 @@ Recommended distribution:
 2. **GitHub Releases**: small zipped proof packages and screenshots.
 3. **Hugging Face model repo**: model package, tokenizer, metadata, model card, sample outputs.
 
-Published Hugging Face packages:
+Hugging Face packages and publication targets:
 
 - Published 30M v02g proof package: [ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g)
 - Published 70M v07b proof package: [ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b)
 - Published 100M v08a proof package: [ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a](https://huggingface.co/ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a)
+- Publication-ready 200M v09a proof package target: [ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a](https://huggingface.co/ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a)
 - Earlier v0.2b QA proof model: [ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b)
 - Historical v0.1 TinyStories proof model: [ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
 
 Current published/local speed candidate package names:
 
 - `leviathan_mlgru_70m_instruct_v07b`: local 70M proof package and confirmed local CPU speed candidate.
-- `leviathan_mlgru_100m_instruct_v08a`: local 100M proof package and current active local CPU speed candidate.
+- `leviathan_mlgru_100m_instruct_v08a`: local 100M proof package and confirmed local CPU speed candidate.
+- `leviathan_mlgru_200m_instruct_v09a`: local 200M proof package and current active local CPU speed candidate.
 
 Suggested files for the published v02g package:
 
@@ -479,7 +486,7 @@ PTQ conversion can be useful for runtime stress tests, but coherent generation r
 - This is a research prototype, not a production LLM runtime.
 - The 30M MLGRU model is a proof model, not a general assistant.
 - TinyStories-trained models produce story-like completions, not broad factual answers.
-- Top-K speed remains experimental; v08a has a 100M local CPU histogram Top-K candidate, not a general sparse speedup.
+- Top-K speed remains experimental; v09a has a 200M local CPU histogram Top-K candidate, not a general sparse speedup.
 - MLGRU mode requires compatible recurrent weights.
 - Larger models, better datasets, and kernel-level sparse optimizations are needed before claiming major speedups.
 
@@ -574,12 +581,14 @@ For sparse-scope experiments, the earlier `--sparse-scope down --top-k 0.2 --spa
 
 - [x] Add config-driven 200M MLGRU run path.
 - [x] Add 200M parameter estimate and benchmark commands.
-- [ ] Dry-run `leviathan_mlgru_200m_instruct_v09a`.
-- [ ] Train and export `leviathan_mlgru_200m_instruct_v09a`.
+- [x] Dry-run `leviathan_mlgru_200m_instruct_v09a`.
+- [x] Train and export `leviathan_mlgru_200m_instruct_v09a`.
 - [ ] Expand QA/instruction data beyond TinyStories plus the small project QA seed.
-- [ ] Run dense QA and histogram down-only sweep on v09a.
+- [x] Run dense QA and histogram down-only sweep on v09a.
+- [ ] Publish v09a Hugging Face package.
 - [ ] Test on additional CPU hardware.
-- [ ] Defer 1B-class work until 150M/200M behavior is measured and reviewed.
+- [ ] Consider optional v10 300M/500M only after new budget or credits.
+- [x] Defer 1B-class work until 150M/200M behavior is measured and reviewed.
 
 ### v1.0 target
 
