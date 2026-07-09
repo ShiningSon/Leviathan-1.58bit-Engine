@@ -78,12 +78,59 @@ training_stage: v0.9a-200m-scaling-probe
 model_display_name: Leviathan-MLGRU-200M-TinyStories-Instruct-v0.9a
 ```
 
+Accelerated v09a configs:
+
+```text
+training\configs\v09a_200m_mlgru_h100_fast.json
+training\configs\v09a_200m_mlgru_h200_fast.json
+training\configs\v09a_200m_mlgru_h100_safe.json
+```
+
+## GPU Memory And Batch-Size Plan
+
+The original L40S path failed with CUDA OOM at `batch_size: 4` for the 200M-class v09a configuration. The failed run reported about 44.39 GiB usable GPU memory, about 44.37 GiB already in use, and then failed when trying to allocate another 20 MiB.
+
+H100 is the first accelerated retry target. The primary H100 config uses `batch_size: 6` instead of retrying `batch_size: 4`, because the larger GPU should be used for better throughput and lower wall-clock time while keeping the same proof-model training recipe.
+
+H200 is optional and uses `batch_size: 10` first. If H100 fast is unstable or still memory-bound, the H100 safe fallback returns to `batch_size: 4`.
+
+Do not use `H100:2` or `H200:2` with the current script. The training route is single-process and single-GPU; no DDP or FSDP path is implemented.
+
+The larger batches are for throughput. The learning rate remains `0.0003` to avoid introducing unnecessary QA instability. If dense QA drops below 90%, run a v09b QA repair stage rather than over-interpreting sparse results.
+
+H100 fast config:
+
+```text
+batch_size: 6
+steps: 1800
+lr: 0.0003
+training_stage: v0.9a-200m-scaling-probe-h100-fast
+```
+
+H200 fast config:
+
+```text
+batch_size: 10
+steps: 1400
+lr: 0.0003
+training_stage: v0.9a-200m-scaling-probe-h200-fast
+```
+
+H100 safe fallback config:
+
+```text
+batch_size: 4
+steps: 2200
+lr: 0.0003
+training_stage: v0.9a-200m-scaling-probe-h100-safe
+```
+
 ## Dry-Run Parameter Check
 
 Run from the repository root:
 
 ```cmd
-python -m modal run training\07_finetune_supervised_qa_mlgru_modal_L40S_v02f.py --config-json training\configs\v09a_200m_mlgru.json --dry-run
+python -m modal run training\08_finetune_supervised_qa_mlgru_modal_H100_v09.py --config-json training\configs\v09a_200m_mlgru_h100_fast.json --dry-run
 ```
 
 Expected output should include:
@@ -94,8 +141,22 @@ Expected output should include:
 
 ## Training And Export Command
 
+H100 fast path:
+
 ```cmd
-python -m modal run training\07_finetune_supervised_qa_mlgru_modal_L40S_v02f.py --config-json training\configs\v09a_200m_mlgru.json
+python -m modal run training\08_finetune_supervised_qa_mlgru_modal_H100_v09.py --config-json training\configs\v09a_200m_mlgru_h100_fast.json
+```
+
+H100 safe fallback:
+
+```cmd
+python -m modal run training\08_finetune_supervised_qa_mlgru_modal_H100_v09.py --config-json training\configs\v09a_200m_mlgru_h100_safe.json
+```
+
+H200 fast path:
+
+```cmd
+python -m modal run training\08_finetune_supervised_qa_mlgru_modal_H200_v09.py --config-json training\configs\v09a_200m_mlgru_h200_fast.json
 ```
 
 ## Download Exported Package
