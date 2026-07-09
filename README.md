@@ -60,6 +60,8 @@ Density guide:
 - `0.08` is the v07b 70M candidate density.
 - `0.12` is the v0.6 30M candidate density.
 
+These densities are measured candidates for specific proof-model packages and local CPU runs. `0.06` is not a universal best Top-K setting.
+
 The important change is that fractional values are treated as **per-layer density ratios** rather than fixed absolute K values.
 This avoids the failure mode where a fixed K is acceptable for narrow projections but destroys wide FFN projections.
 
@@ -122,7 +124,7 @@ Published 30M instruct proof package:
 - dense strict QA: 190/200 keyword-guarded passes, or 95.0%
 - known limitation: one package-description prompt still shows residual TinyStories-style continuation
 
-Current active local speed candidate:
+Current active 100M speed candidate:
 
 - `leviathan_mlgru_100m_instruct_v08a`
 - architecture: `mlgru`
@@ -130,7 +132,7 @@ Current active local speed candidate:
 - layers: 8
 - intermediate size: 3072
 - estimated trainable parameters: about 99.14M
-- status: local/exported 100M speed candidate, not Hugging Face published, not a general assistant
+- status: published 100M Hugging Face proof package and current local CPU speed candidate, not a general assistant
 - current candidate setting: `--top-k 0.06 --sparse-scope down --top-k-select histogram --sparse-min-density 0.6 --no-top-k-sort`
 
 The early proof models are intentionally small. They validate the full route:
@@ -435,7 +437,7 @@ Published Hugging Face packages:
 - Earlier v0.2b QA proof model: [ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b)
 - Historical v0.1 TinyStories proof model: [ShiningSon/Leviathan-MLGRU-30M-TinyStories](https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories)
 
-Current local/exported speed candidates:
+Current published/local speed candidate package names:
 
 - `leviathan_mlgru_70m_instruct_v07b`: local 70M proof package and confirmed local CPU speed candidate.
 - `leviathan_mlgru_100m_instruct_v08a`: local 100M proof package and current active local CPU speed candidate.
