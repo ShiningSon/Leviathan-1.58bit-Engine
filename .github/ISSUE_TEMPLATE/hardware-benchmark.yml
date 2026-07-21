@@ -1,0 +1,87 @@
+name: Hardware benchmark submission
+description: Submit a reproducible dense and Top-K benchmark from another CPU.
+title: "[Hardware benchmark] "
+labels:
+  - benchmark
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Leviathan. Pin the model revision and engine commit, attach the validated submission JSON, and remove private information before posting. Unverified numbers will not be added to canonical benchmark tables.
+  - type: input
+    id: cpu
+    attributes:
+      label: CPU model
+      placeholder: Manufacturer and model only; do not include a hostname.
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11, Ubuntu 24.04, and so on
+    validations:
+      required: true
+  - type: input
+    id: compiler
+    attributes:
+      label: Compiler
+      placeholder: cl 19.40, GCC 13.2, or Clang 18
+    validations:
+      required: true
+  - type: input
+    id: model_revision
+    attributes:
+      label: Model revision
+      description: Full pinned Hugging Face commit, not `main`.
+    validations:
+      required: true
+  - type: input
+    id: engine_commit
+    attributes:
+      label: Engine commit
+      description: Full 40-character Git commit.
+    validations:
+      required: true
+  - type: textarea
+    id: dense_result
+    attributes:
+      label: Dense result
+      description: Include repeats, mean/median/stddev latency, and tokens/sec.
+    validations:
+      required: true
+  - type: textarea
+    id: topk_result
+    attributes:
+      label: Top-K result
+      description: Include density, selector, scope, all sparse flags, and timing aggregates.
+    validations:
+      required: true
+  - type: textarea
+    id: qa_result
+    attributes:
+      label: QA result
+      description: Report numerator, denominator, and rate for dense and Top-K.
+    validations:
+      required: true
+  - type: textarea
+    id: submission
+    attributes:
+      label: Submission JSON attachment
+      description: Drag the validated `submission.json` file here. Do not paste secrets or private paths.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Record thermal conditions, background load, thread settings, and any deviations.
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I validated the JSON with `scripts/validate_benchmark_submission.py` and reviewed it for private information.
+          required: true
+        - label: I understand this result is hardware-specific and is not a general sparse speedup claim.
+          required: true
