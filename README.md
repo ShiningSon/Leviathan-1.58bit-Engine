@@ -9,6 +9,8 @@ Leviathan is an experimental local CPU inference stack for native ternary / 1.58
 
 The current 200M-class package is published at [ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a](https://huggingface.co/ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a). Its verified public revision, file sizes, and SHA-256 hashes are recorded in [`releases/v0.9.0_hf_manifest.json`](releases/v0.9.0_hf_manifest.json).
 
+Release: [Leviathan v0.9.0](https://github.com/ShiningSon/Leviathan-1.58bit-Engine/releases/tag/v0.9.0)
+
 ## 60-second quickstart
 
 Requirements: Python, PyTorch, a C++ compiler with OpenMP support, and the dependencies in `requirements.txt`. On Windows, install the MSVC Build Tools used by PyTorch C++ extensions.
@@ -152,7 +154,7 @@ Never treat a Leviathan package as a standard Transformers checkpoint. It must b
 - [x] Add a canonical benchmark summary, release checks, lightweight tests, and cross-platform CI.
 - [ ] Validate the candidate on additional CPU hardware.
 - [ ] Expand strict QA beyond the 20-prompt project regression set.
-- [ ] Create the `v0.9.0` tag and GitHub Release after final review.
+- [x] Create the `v0.9.0` tag and GitHub Release after final review.
 
 ### Toward v1.0
 
@@ -163,7 +165,7 @@ Never treat a Leviathan package as a standard Transformers checkpoint. It must b
 
 ## Contributing and citation
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before proposing runtime or benchmark changes. The repository includes [`CITATION.cff`](CITATION.cff) for research citation metadata, [`docs/V09_RELEASE_NOTES.md`](docs/V09_RELEASE_NOTES.md) for the v0.9 artifact summary, and [`docs/V09_RELEASE_CHECKLIST.md`](docs/V09_RELEASE_CHECKLIST.md) for the release-candidate gates.
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before proposing runtime or benchmark changes. The repository includes [`CITATION.cff`](CITATION.cff) for research citation metadata, [`docs/V09_RELEASE_NOTES.md`](docs/V09_RELEASE_NOTES.md) for the v0.9 artifact summary, and [`docs/V09_RELEASE_CHECKLIST.md`](docs/V09_RELEASE_CHECKLIST.md) for the final release gates.
 
 ## License
 

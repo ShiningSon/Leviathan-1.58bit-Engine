@@ -1,12 +1,16 @@
-# Leviathan v0.9 Research Artifact Release Notes
+# Leviathan v0.9.0 Research Artifact Release Notes
 
-Version metadata: `0.9.0`. The Git tag and GitHub Release are intentionally deferred until the final repository and package review is complete.
+Version: `0.9.0`
+
+Release date: 2026-07-21
+
+This is the first tagged Leviathan v0.9 research artifact. Canonical release: [Leviathan v0.9.0](https://github.com/ShiningSon/Leviathan-1.58bit-Engine/releases/tag/v0.9.0).
 
 ## Highlights
 
 - Completed the v09a 200M-class MLGRU training and Leviathan v2 export route.
 - Preserved dense strict QA at 600/600 in the confirmed repeat-30 local benchmark.
-- Confirmed histogram Top-K `0.10` on the down projection as the current experimental 200M local CPU candidate.
+- Confirmed histogram Top-K `0.10` on the down projection as the current experimental 200M-class local CPU candidate.
 - Added a canonical compact scaling summary, validation scripts, release-readiness checks, lightweight tests, and Windows/Linux CI.
 - Published the reviewed v09a Leviathan runtime package on Hugging Face.
 
@@ -14,7 +18,7 @@ Version metadata: `0.9.0`. The Git tag and GitHub Release are intentionally defe
 
 The initial v09a L40S attempt failed with CUDA out-of-memory pressure. The repository therefore added single-GPU H100 and H200 training paths plus H100 fast/safe and H200 fast configs. This was a training-capacity change, not a change to the inference benchmark method.
 
-The exported architecture uses an 8192-token vocabulary, hidden size 1280, 10 MLGRU layers, and intermediate size 4096. The existing tied-embedding estimate is 233,388,800 trainable parameters.
+The exported architecture uses an 8192-token vocabulary, hidden size 1280, 10 MLGRU layers, and intermediate size 4096. It has approximately 233.4M estimated trainable parameters (233,388,800 under the existing tied-embedding estimate).
 
 ## Quality and sparse sweep
 
@@ -35,6 +39,8 @@ Published Hugging Face repository:
 
 [ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a](https://huggingface.co/ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a)
 
+Verified public revision: `116a857bdaf2a1118d479d52aedba7e65cbff960`.
+
 The package contains a Leviathan runtime binary, metadata, tokenizer, report, sample outputs, and model card. It is not a standard Transformers checkpoint and hosted inference is disabled. The verified public revision, byte sizes, and SHA-256 hashes are frozen in [`releases/v0.9.0_hf_manifest.json`](../releases/v0.9.0_hf_manifest.json).
 
 ## Known limitations
@@ -45,4 +51,4 @@ The package contains a Leviathan runtime binary, metadata, tokenizer, report, sa
 - This is not a general sparse speedup claim, Top-K is not always faster, and scaling to other hardware or larger models is not automatically proven.
 - Threshold sparsity and naive block Top-K remain negative experiments and are not active runtime paths.
 
-Final release-gate outcomes are recorded in [`docs/V09_RELEASE_CHECKLIST.md`](V09_RELEASE_CHECKLIST.md). The `v0.9.0` tag and GitHub Release remain intentionally deferred for a separate action.
+All pre-release gates passed and are recorded in [`docs/V09_RELEASE_CHECKLIST.md`](V09_RELEASE_CHECKLIST.md). The authorized `v0.9.0` publication is completed by the release task after CI passes on the exact release commit.

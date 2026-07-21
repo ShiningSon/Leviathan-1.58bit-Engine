@@ -5,6 +5,7 @@ type: software
 authors:
   - family-names: "ShiningSon"
 version: 0.9.0
+date-released: 2026-07-21
 repository-code: "https://github.com/ShiningSon/Leviathan-1.58bit-Engine"
 url: "https://github.com/ShiningSon/Leviathan-1.58bit-Engine"
 license: MIT

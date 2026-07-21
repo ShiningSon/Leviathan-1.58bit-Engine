@@ -1,6 +1,6 @@
-# Leviathan v0.9.0 Release Candidate Checklist
+# Leviathan v0.9.0 Final Release Checklist
 
-This checklist records the final release-gate review before creating the deferred `v0.9.0` tag and GitHub Release. Verification used public Hugging Face revision `116a857bdaf2a1118d479d52aedba7e65cbff960` on 2026-07-21 UTC.
+This checklist records the completed pre-release gate review for the authorized `v0.9.0` release target. Verification used public Hugging Face revision `116a857bdaf2a1118d479d52aedba7e65cbff960` on 2026-07-21 UTC.
 
 - [x] Local Python compile passed for `engine.py`, `quantizer.py`, `scripts/`, `training/`, and `tests/`.
 - [x] Lightweight unit tests passed.
@@ -18,6 +18,6 @@ This checklist records the final release-gate review before creating the deferre
 - [x] SHA-256 and byte size are recorded for every public package file in [`releases/v0.9.0_hf_manifest.json`](../releases/v0.9.0_hf_manifest.json).
 - [x] The confirmed benchmark is explicitly limited to one local CPU environment.
 - [x] Additional CPU validation remains deferred and is documented as an open roadmap item.
-- [x] All verified release gates are complete; the release candidate is ready for the separately authorized `v0.9.0` tag.
+- [x] All pre-release gates passed and `v0.9.0` is the authorized release target.
 
-The tag and GitHub Release are not created by this verification task.
+Release completion is performed by the authorized release task after CI succeeds on the exact release commit.

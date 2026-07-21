@@ -15,6 +15,8 @@ Recommended Top-K values below are model-specific experimental local CPU candida
 
 The v09a sparse command also requires `--sparse-min-density 0.6 --no-top-k-sort --top-k-select histogram --sparse-scope down`. Top-K `0.08` is not recommended for v09a because its strict QA result dropped to 570/600 even though it measured faster. The verified public revision and per-file hashes are recorded in [`releases/v0.9.0_hf_manifest.json`](releases/v0.9.0_hf_manifest.json).
 
+Source release: [Leviathan v0.9.0](https://github.com/ShiningSon/Leviathan-1.58bit-Engine/releases/tag/v0.9.0).
+
 ## Publication-ready packages
 
 No reviewed active package is waiting for initial publication. The versioned cards remain under `hf_cards/` so future package revisions can be reviewed before upload.
