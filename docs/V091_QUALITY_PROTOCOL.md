@@ -37,6 +37,31 @@ Two reviewers are preferred for a report intended for canonical documentation. R
 
 Do not convert a qualitative judgment into an exact percentage without publishing the rubric, reviewer count, disagreement handling, model revision, engine commit, and prompt-set hash.
 
+Generate one paired row per qualitative prompt with dense and Top-K `0.10` outputs:
+
+```cmd
+python scripts\run_qualitative_holdout.py --model-dir .\leviathan_mlgru_200m_instruct_v09a --engine .\engine.py --prompts .\benchmarks\prompts_v091_holdout.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.10 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --model-repo ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a --model-revision 116a857bdaf2a1118d479d52aedba7e65cbff960 --out-dir .\benchmark_runs\v091_qualitative
+```
+
+The generated `qualitative_review.md` and `qualitative_review.csv` contain exactly 35 paired review rows. For each row, a human reviewer records:
+
+- a dense verdict: `pass`, `concern`, or `fail`;
+- a sparse verdict: `pass`, `concern`, or `fail`;
+- semantic equivalence: `yes`, `partial`, or `no`;
+- concise notes tied to the item criteria;
+- a reviewer identifier or pseudonym;
+- disagreement resolution when more than one reviewer participated.
+
+Two reviewers are preferred. If only one reviewer is available, state that explicitly, do not report inter-rater agreement, and do not describe the result as independently adjudicated. AI-generated preliminary comments may assist a reviewer but do not count as the required human review and must not populate the reviewer field.
+
+Validate a newly generated blank worksheet before review:
+
+```cmd
+python scripts\validate_qualitative_review.py .\benchmark_runs\v091_qualitative\qualitative_outputs.json --worksheet .\benchmark_runs\v091_qualitative\qualitative_review.csv --expect-unreviewed
+```
+
+After a person fills every required verdict, equivalence, and reviewer field, validate with `--expect-completed`. Keep generated worksheets under ignored `benchmark_runs/` until the human review and disclosure are complete.
+
 ## Running the exact holdout
 
 The following command runs the 70 automatically scored items. It does not run the 35 qualitative prompts:
@@ -46,6 +71,8 @@ python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_200m_instruct_v
 ```
 
 Treat this as new v0.9.1 evidence. Do not replace or retroactively reinterpret the v0.9.0 20-prompt benchmark rows.
+
+The compact repeat-10 record is published in [`reports/v091_exact_holdout_summary.md`](../reports/v091_exact_holdout_summary.md), with a machine-readable companion JSON. Raw `benchmark_runs/` outputs remain local artifacts.
 
 ## Why v0.9.0 remains unchanged
 

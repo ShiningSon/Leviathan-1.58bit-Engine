@@ -73,6 +73,6 @@ The exporter recalculates mean, median, population standard deviation, QA totals
 
 ## 6. Share the result
 
-Open a GitHub issue using the **Hardware benchmark submission** template and attach `submission.json` by dragging it into the issue. A small PR may add the JSON under a maintainer-approved location after review; do not commit `benchmark_runs/`, model weights, logs, or private environment files.
+Post the result to the [`v0.9.1 cross-hardware benchmark submissions`](https://github.com/ShiningSon/Leviathan-1.58bit-Engine/issues/2) tracking issue using the **Hardware benchmark submission** template, and attach `submission.json` by dragging it into the issue. A small PR may add the JSON under a maintainer-approved location after review; do not commit `benchmark_runs/`, model weights, logs, or private environment files.
 
 Maintainers will verify the schema, pinned revisions, QA preservation, caveats, and plausibility of the timing. Unverified numbers will not be added to canonical benchmark tables. A valid submission is evidence for that exact hardware and software configuration, not proof that Top-K is always faster.
