@@ -6,8 +6,8 @@ This checklist records the final release-gate review before creating the deferre
 - [x] Lightweight unit tests passed.
 - [x] Canonical benchmark summary validation passed.
 - [x] Repository release-readiness validation passed.
-- [x] Ubuntu CI passed on the starting release-documentation commit (`ec83a86`, Actions run `29815447615`).
-- [x] Windows CI passed on the starting release-documentation commit (`ec83a86`, Actions run `29815447615`).
+- [x] Ubuntu CI passed on the release-candidate verification commit (`7cc782e`, Actions run `29817714519`).
+- [x] Windows CI passed on the release-candidate verification commit (`7cc782e`, Actions run `29817714519`).
 - [x] The public v09a Hugging Face repository is visible without authentication.
 - [x] The HF dry run listed all eight public files (77,442,152 bytes total).
 - [x] A clean public HF snapshot download completed.
@@ -18,6 +18,6 @@ This checklist records the final release-gate review before creating the deferre
 - [x] SHA-256 and byte size are recorded for every public package file in [`releases/v0.9.0_hf_manifest.json`](../releases/v0.9.0_hf_manifest.json).
 - [x] The confirmed benchmark is explicitly limited to one local CPU environment.
 - [x] Additional CPU validation remains deferred and is documented as an open roadmap item.
-- [ ] Ready for the `v0.9.0` tag after the final `main` push passes both CI jobs.
+- [x] All verified release gates are complete; the release candidate is ready for the separately authorized `v0.9.0` tag.
 
 The tag and GitHub Release are not created by this verification task.
