@@ -8,7 +8,7 @@ Leviathan benchmark results should be repeatable enough to compare dense mode wi
 
 Use `--prompt-template plain` only for raw continuation experiments. Plain mode can break the QA matching behavior that v0.2b was trained to demonstrate.
 
-Dense mode remains the stable default for the published 30M Hugging Face proof package. The current active local speed candidate is v08a 100M with histogram down-only Top-K `0.06`, but do not claim Top-K speedup unless the measured average tokens/sec is actually higher than dense under the same settings.
+Dense mode remains the stable default for the published 30M Hugging Face proof package. The current active local speed candidate is v09a 200M with histogram down-only Top-K `0.10`, but do not claim Top-K speedup unless the measured average tokens/sec is actually higher than dense under the same settings and strict QA is preserved.
 
 The v0.2b prompt set has been expanded from the initial 4 prompts to a small 20-prompt regression set. It covers core concepts, runtime modes, prompt-template usage, model packaging, and GitHub/Hugging Face distribution. It is still not a full model evaluation benchmark.
 
@@ -26,10 +26,10 @@ For v0.6 and later speed-candidate checks, use `--top-k-select histogram` with `
 
 From the repository root:
 
-Current v08a 100M candidate check:
+Current v09a 200M candidate check:
 
 ```cmd
-python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_100m_instruct_v08a --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.06 0.08 0.10 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v08a_100m_histogram_candidate_repeat30
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_200m_instruct_v09a --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.08 0.10 0.12 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v09a_200m_histogram_candidates_repeat30
 ```
 
 Historical high-density fallback check:
@@ -99,6 +99,8 @@ benchmark_runs/v04_sparse_fallback/sample_outputs.txt
 Run the benchmark, open `benchmark_runs/v04_sparse_fallback/results.md`, and review the table plus sample outputs. If the outputs are sane, copy the Markdown summary into `BENCHMARK.md` in a separate documentation commit.
 
 Do not copy generated files from `benchmark_runs/` into Git history. The folder is ignored because benchmark output is machine-local and can grow over time.
+
+Confirmed compact scaling records belong in [`../benchmarks/results/scaling_summary.json`](../benchmarks/results/scaling_summary.json). Run `python scripts\validate_benchmark_summary.py` after editing that file.
 
 ## Top-K interpretation
 

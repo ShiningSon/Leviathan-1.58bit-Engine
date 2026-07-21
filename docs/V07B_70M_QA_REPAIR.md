@@ -74,7 +74,7 @@ Sparse scope: down
 
 Top-K `0.08` histogram down-only was the v07b 70M experimental local CPU speed candidate. It improved latency by about 5.92% and tokens/sec by about 6.55% versus dense in this repeat-30 interleaved run while preserving the measured strict QA pass rate.
 
-This is a local CPU 70M proof-model result. It is not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to larger models or other hardware. The current top active local candidate is now v08a 100M with histogram down-only Top-K `0.06`.
+This is a local CPU 70M proof-model result. It is not a general sparse speedup claim, not a claim that Top-K is always faster, and not evidence that the result automatically scales to larger models or other hardware. The later v08a 100M and current v09a 200M records continue the measured scaling series.
 
 ## Config
 

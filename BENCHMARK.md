@@ -5,6 +5,8 @@ This file records observed runtime results for Leviathan models.
 The current benchmark is an early proof benchmark. It is not a broad hardware study yet.
 It is intended to document what currently works, what does not yet work, and what needs to be optimized next.
 
+The canonical compact 30M/70M/100M/200M scaling summary is [`benchmarks/results/scaling_summary.json`](benchmarks/results/scaling_summary.json). The detailed sections below preserve historical context, negative experiments, and model-specific measurements.
+
 ---
 
 ## Environment
@@ -17,7 +19,7 @@ Compiler: MSVC 19.51.36246 for x64 via Visual Studio Community / PyTorch C++ ext
 Python: 3.10.11
 PyTorch: 2.12.1+cpu
 CUDA: not used for local inference benchmark
-Engine commit: 6a05e63ab636
+Initial v0.1 engine commit: 6a05e63ab636
 v0.1 model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories
 v0.2b model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02b
 v0.2g model package: https://huggingface.co/ShiningSon/Leviathan-MLGRU-30M-TinyStories-Instruct-v02g
@@ -29,6 +31,19 @@ Runtime notes:
 - Reported tokens/sec below should be interpreted as interactive local runtime observations.
 - Repeatable benchmark automation is available through `scripts/benchmark_engine.py`.
 - Generated `benchmark_runs/` outputs are local artifacts and should not be committed.
+
+---
+
+## Canonical scaling summary
+
+| Model | Dense | Recommended sparse mode | Sparse result | Strict QA | Tokens/sec delta | Latency delta | Status |
+|---|---:|---|---:|---:|---:|---:|---|
+| 30M v02g route | 50.74 ms / 350.97 tok/s | Top-K `0.12`, histogram, down-only | 50.25 ms / 354.17 tok/s | 950/1000 both | +0.91% | -0.97% | Experimental local CPU candidate; small margin |
+| 70M v07b | 72.85 ms / 238.50 tok/s | Top-K `0.08`, histogram, down-only | 68.54 ms / 254.12 tok/s | 600/600 both | +6.55% | -5.92% | Experimental local CPU candidate |
+| 100M v08a | 101.15 ms / 176.73 tok/s | Top-K `0.06`, histogram, down-only | 90.39 ms / 191.14 tok/s | 570/600 -> 600/600 | +8.15% | -10.64% | Experimental local CPU candidate |
+| 200M v09a | 193.92 ms / 88.30 tok/s | Top-K `0.10`, histogram, down-only | 175.33 ms / 97.54 tok/s | 600/600 both | +10.46% | -9.58% | Current experimental local CPU candidate |
+
+These are model-specific observations from one local CPU environment. They do not prove that Top-K is always faster, that one density is universal, or that the measured behavior automatically transfers to other hardware or larger models. The JSON summary is validated by `scripts/validate_benchmark_summary.py`.
 
 ---
 
@@ -165,7 +180,7 @@ Current conclusion:
 ```text
 At 30M scale, dense mode is faster because Top-K selection overhead dominates.
 Ratio Top-K preserves readable generation, but it is not yet a speed win at this model size.
-Future work will focus on 150M/200M-class scaling validation, additional CPU hardware, and lower-overhead sparse kernels.
+Subsequent v09a work completed the 200M-class scaling probe. Remaining work focuses on additional CPU hardware, broader QA coverage, and lower-overhead sparse kernels.
 ```
 
 ---
@@ -266,7 +281,7 @@ Measure:
 - For the 100M local package, histogram down-only Top-K `0.06` is the confirmed v08a local CPU candidate.
 - For the 200M local package, histogram down-only Top-K `0.10` is the current confirmed v09a local CPU candidate.
 
-The v07b 70M and v08a 100M packages are published experimental Leviathan proof packages on Hugging Face. The v09a 200M package is publication-ready and should use a reviewed model card before upload.
+The v07b 70M, v08a 100M, and v09a 200M packages are published experimental Leviathan proof packages on Hugging Face. Future package revisions should use the reviewed cards under `hf_cards/` before upload.
 
 ```text
 ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b
@@ -518,7 +533,7 @@ Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
 ```text
 v0.6 adds an experimental histogram Top-K selector and interleaved benchmark scheduling. On the v02g 30M MLGRU proof model, down-projection-only Top-K at density 0.12 produced a small local CPU speed candidate in repeat-50 interleaved testing: 50.25 ms / 354.17 tok/s versus dense 50.74 ms / 350.97 tok/s, while preserving strict QA at 950/1000 (95.0%).
 
-The latency improvement is about 0.97%, and the tokens/sec improvement is about 0.91%. This is a 30M experimental result, not a general sparse speedup claim. The later v07b and v08a benchmarks below are the 70M and 100M follow-ups; the next validation target is a 150M/200M-class scaling probe under the same strict QA and interleaved scheduling discipline.
+The latency improvement is about 0.97%, and the tokens/sec improvement is about 0.91%. This is a 30M experimental result, not a general sparse speedup claim. The later v07b, v08a, and v09a sections record the completed 70M, 100M, and 200M follow-ups under the same strict QA and interleaved scheduling discipline.
 ```
 
 Known limitation:
@@ -617,7 +632,7 @@ Prompt set: expanded benchmarks/prompts_v02b_qa.json, 20 prompts
 | Mode | Avg latency | Avg tokens/sec | Strict QA pass rate | Notes |
 |---|---:|---:|---:|---|
 | Dense `--top-k 0` | 101.15 ms | 176.73 tok/s | 570/600 (95.0%) | Dense baseline; known package-description failure remains |
-| Top-K `--top-k 0.06` histogram down-only | 90.39 ms | 191.14 tok/s | 600/600 (100.0%) | Current v08a 100M experimental local CPU speed candidate |
+| Top-K `--top-k 0.06` histogram down-only | 90.39 ms | 191.14 tok/s | 600/600 (100.0%) | Confirmed v08a 100M experimental local CPU speed candidate |
 | Top-K `--top-k 0.08` histogram down-only | 91.13 ms | 189.82 tok/s | 600/600 (100.0%) | Preserved 600/600 QA; slower than Top-K 0.06 in this run |
 | Top-K `--top-k 0.10` histogram down-only | 93.45 ms | 189.88 tok/s | 570/600 (95.0%) | Matched dense QA pass rate; slower than Top-K 0.06 in this run |
 

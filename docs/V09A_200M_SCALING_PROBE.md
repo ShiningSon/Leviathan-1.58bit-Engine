@@ -2,7 +2,7 @@
 
 This is the completed 200M-class scaling probe for the Leviathan MLGRU path. It confirms that the histogram Top-K down-only sparse speed margin observed at 30M, 70M, and 100M continues in the v09a local CPU benchmark.
 
-This is a local CPU experimental proof-model result, not a general sparse speedup claim. Do not claim Top-K is always faster, and do not claim other hardware or larger-model scaling is automatically proven. v09a is publication-ready for Hugging Face packaging once the package files and model card are reviewed.
+This is a local CPU experimental proof-model result, not a general sparse speedup claim. Do not claim Top-K is always faster, and do not claim other hardware or larger-model scaling is automatically proven. The reviewed v09a package is published at [ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a](https://huggingface.co/ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a).
 
 ## Purpose
 
@@ -50,6 +50,8 @@ v09b QA repair is not required for the current 20-prompt strict QA benchmark set
 ```text
 leviathan_mlgru_200m_instruct_v09a
 ```
+
+Published Hugging Face repository: https://huggingface.co/ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a
 
 ## Architecture
 
@@ -253,5 +255,5 @@ python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_200m_instruct_v
 
 - v09a is a proof-model speed candidate, not a general assistant.
 - The TinyStories plus small project QA mixture may be too narrow at this scale.
-- Do not publish a Hugging Face model package until the export, smoke test, benchmark output, and model card are reviewed.
+- Review the export, smoke test, benchmark output, and model card before any future Hugging Face package revision.
 - Do not commit generated `benchmark_runs/`, model folders, `.bin`, `.zip`, checkpoints, or cache files to GitHub.

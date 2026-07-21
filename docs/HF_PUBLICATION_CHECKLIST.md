@@ -1,15 +1,15 @@
 # Hugging Face Publication Checklist
 
-This checklist prepares the v07b 70M, v08a 100M, and v09a 200M Leviathan MLGRU proof packages for Hugging Face publication.
+This checklist records the reviewed contents and repeatable upload process for the published v07b 70M, v08a 100M, and v09a 200M Leviathan MLGRU proof packages.
 
 Do not commit or upload unrelated local artifacts. GitHub keeps source, docs, benchmark definitions, and helper scripts. Hugging Face receives the model package files.
 
 ## Target Repositories
 
 ```text
-ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b
-ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a
-ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a
+Published: ShiningSon/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b
+Published: ShiningSon/Leviathan-MLGRU-100M-TinyStories-Instruct-v08a
+Published: ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a
 ```
 
 ## Required Files
