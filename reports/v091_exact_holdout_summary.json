@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "evidence_status": "automated_exact_holdout",
+  "scope": {
+    "prompt_count": 70,
+    "prompt_file": "benchmarks/prompts_v091_holdout.json",
+    "prompt_sha256": "b2e7b77a3fd73c92ff057f48f07cc2fa8af6fb50488322ebad5f34fa016af3ea",
+    "automatic_section": "exact_match_regression"
+  },
+  "metadata": {
+    "engine_commit": "0f31a7eb0dea630f106a1ec5f46f23c08c6682a1",
+    "model_repository": "ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a",
+    "model_revision": "116a857bdaf2a1118d479d52aedba7e65cbff960",
+    "architecture": "mlgru",
+    "prompt_template": "qa",
+    "max_new": 80,
+    "warmup_per_mode": 1,
+    "mode_schedule": "interleave",
+    "sparse_min_density": 0.6,
+    "no_top_k_sort": true,
+    "top_k_selector": "histogram",
+    "sparse_scope": "down"
+  },
+  "probe": {
+    "repeats": 1,
+    "started_at_utc": "2026-07-21T10:26:27.940893+00:00",
+    "completed_at_utc": "2026-07-21T10:27:56.037300+00:00",
+    "modes": {
+      "0": {
+        "avg_latency_ms": 276.080714,
+        "avg_tokens_per_sec": 63.098286,
+        "qa_pass_count": 16,
+        "measured_prompt_count": 70,
+        "qa_pass_rate": 0.2285714286,
+        "process_failures": 0,
+        "parse_failures": 0
+      },
+      "0.10": {
+        "avg_latency_ms": 251.056286,
+        "avg_tokens_per_sec": 70.069,
+        "qa_pass_count": 17,
+        "measured_prompt_count": 70,
+        "qa_pass_rate": 0.2428571429,
+        "process_failures": 0,
+        "parse_failures": 0
+      }
+    }
+  },
+  "repeat_10": {
+    "repeats": 10,
+    "started_at_utc": "2026-07-21T10:28:23.624227+00:00",
+    "completed_at_utc": "2026-07-21T10:36:25.883671+00:00",
+    "modes": {
+      "0": {
+        "avg_latency_ms": 278.033529,
+        "avg_tokens_per_sec": 62.746957,
+        "qa_pass_count": 160,
+        "measured_prompt_count": 700,
+        "qa_pass_rate": 0.2285714286,
+        "process_failures": 0,
+        "parse_failures": 0,
+        "forbidden_term_failures": 0,
+        "max_words_failures": 0,
+        "categories": {
+          "leviathan_concepts": {"passes": 40, "total": 100, "failed_prompt_ids": ["lc-e04", "lc-e05", "lc-e06", "lc-e07", "lc-e08", "lc-e10"]},
+          "paraphrase_robustness": {"passes": 40, "total": 100, "failed_prompt_ids": ["pr-e01", "pr-e02", "pr-e06", "pr-e07", "pr-e09", "pr-e10"]},
+          "negation_and_limitation_awareness": {"passes": 20, "total": 100, "failed_prompt_ids": ["nl-e02", "nl-e03", "nl-e04", "nl-e06", "nl-e07", "nl-e08", "nl-e09", "nl-e10"]},
+          "package_runtime_usage": {"passes": 10, "total": 100, "failed_prompt_ids": ["pu-e01", "pu-e02", "pu-e03", "pu-e04", "pu-e05", "pu-e07", "pu-e08", "pu-e09", "pu-e10"]},
+          "sparse_mode_caveats": {"passes": 0, "total": 100, "failed_prompt_ids": ["sc-e01", "sc-e02", "sc-e03", "sc-e04", "sc-e05", "sc-e06", "sc-e07", "sc-e08", "sc-e09", "sc-e10"]},
+          "simple_tinystories_comprehension": {"passes": 0, "total": 100, "failed_prompt_ids": ["ts-e01", "ts-e02", "ts-e03", "ts-e04", "ts-e05", "ts-e06", "ts-e07", "ts-e08", "ts-e09", "ts-e10"]},
+          "malformed_or_ambiguous_requests": {"passes": 50, "total": 100, "failed_prompt_ids": ["ma-e01", "ma-e06", "ma-e07", "ma-e09", "ma-e10"]}
+        }
+      },
+      "0.10": {
+        "avg_latency_ms": 248.700157,
+        "avg_tokens_per_sec": 70.573429,
+        "qa_pass_count": 170,
+        "measured_prompt_count": 700,
+        "qa_pass_rate": 0.2428571429,
+        "process_failures": 0,
+        "parse_failures": 0,
+        "forbidden_term_failures": 0,
+        "max_words_failures": 0,
+        "categories": {
+          "leviathan_concepts": {"passes": 40, "total": 100, "failed_prompt_ids": ["lc-e04", "lc-e05", "lc-e06", "lc-e07", "lc-e08", "lc-e10"]},
+          "paraphrase_robustness": {"passes": 40, "total": 100, "failed_prompt_ids": ["pr-e01", "pr-e02", "pr-e06", "pr-e07", "pr-e09", "pr-e10"]},
+          "negation_and_limitation_awareness": {"passes": 20, "total": 100, "failed_prompt_ids": ["nl-e02", "nl-e03", "nl-e04", "nl-e06", "nl-e07", "nl-e08", "nl-e09", "nl-e10"]},
+          "package_runtime_usage": {"passes": 10, "total": 100, "failed_prompt_ids": ["pu-e01", "pu-e02", "pu-e03", "pu-e04", "pu-e05", "pu-e07", "pu-e08", "pu-e09", "pu-e10"]},
+          "sparse_mode_caveats": {"passes": 10, "total": 100, "failed_prompt_ids": ["sc-e01", "sc-e02", "sc-e04", "sc-e05", "sc-e06", "sc-e07", "sc-e08", "sc-e09", "sc-e10"]},
+          "simple_tinystories_comprehension": {"passes": 0, "total": 100, "failed_prompt_ids": ["ts-e01", "ts-e02", "ts-e03", "ts-e04", "ts-e05", "ts-e06", "ts-e07", "ts-e08", "ts-e09", "ts-e10"]},
+          "malformed_or_ambiguous_requests": {"passes": 50, "total": 100, "failed_prompt_ids": ["ma-e01", "ma-e06", "ma-e07", "ma-e09", "ma-e10"]}
+        }
+      }
+    }
+  },
+  "limitations": [
+    "Exact keyword rules can reject valid synonyms or accept weak answers containing the required terms.",
+    "The public project-specific holdout cannot eliminate conceptual contamination risk.",
+    "Zero forbidden-term and max-words failures do not prove the absence of semantic or story-style contamination.",
+    "Sampled outputs included unrelated memorized project answers on some comprehension and package prompts.",
+    "These results do not support a broad language-quality claim or universal sparse acceleration claim."
+  ]
+}
