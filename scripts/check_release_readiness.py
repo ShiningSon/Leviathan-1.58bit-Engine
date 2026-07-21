@@ -34,7 +34,12 @@ REQUIRED_DOCUMENTS = (
     "docs/HF_PUBLICATION_CHECKLIST.md",
     "docs/REPRODUCIBILITY.md",
     "docs/V09A_200M_SCALING_PROBE.md",
+    "docs/V09_RELEASE_CHECKLIST.md",
     "docs/V09_RELEASE_NOTES.md",
+)
+REQUIRED_RELEASE_FILES = (
+    "releases/v0.9.0_hf_manifest.json",
+    "scripts/verify_hf_release.py",
 )
 REQUIRED_HF_CARDS = (
     "hf_cards/Leviathan-MLGRU-70M-TinyStories-Instruct-v07b_README.md",
@@ -50,7 +55,20 @@ REQUIRED_CONFIGS = (
     "training/configs/v09a_200m_mlgru_h200_fast.json",
 )
 SUMMARY_PATH = "benchmarks/results/scaling_summary.json"
+RELEASE_MANIFEST_PATH = "releases/v0.9.0_hf_manifest.json"
 V09_CARD_PATH = "hf_cards/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a_README.md"
+V09_HF_REPO_ID = "ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a"
+V09_HF_REVISION = "116a857bdaf2a1118d479d52aedba7e65cbff960"
+V09_HF_FILES = {
+    ".gitattributes",
+    "README.md",
+    "leviathan_mlgru_200m_instruct_v09a.bin",
+    "leviathan_mlgru_200m_instruct_v09a_meta.json",
+    "leviathan_mlgru_tokenizer/tokenizer.json",
+    "leviathan_mlgru_tokenizer/tokenizer_config.json",
+    "report.json",
+    "sample_outputs.txt",
+}
 V09_CONSISTENCY_FILES = (
     "README.md",
     "BENCHMARK.md",
@@ -112,6 +130,93 @@ def check_summary(root: Path) -> list[str]:
     except (OSError, json.JSONDecodeError) as exc:
         return [f"benchmark summary cannot be loaded: {exc}"]
     return [f"benchmark summary: {error}" for error in validate_summary(data)]
+
+
+def validate_release_manifest(data: object) -> list[str]:
+    if not isinstance(data, dict):
+        return ["release manifest must contain a JSON object"]
+
+    errors: list[str] = []
+    expected_values = {
+        "schema_version": 1,
+        "repo_id": V09_HF_REPO_ID,
+        "resolved_hf_revision": V09_HF_REVISION,
+        "package_name": "leviathan_mlgru_200m_instruct_v09a",
+        "architecture": "mlgru",
+        "parameter_class": "200M-class",
+        "estimated_trainable_parameters": 233388800,
+        "recommended_top_k": 0.10,
+        "selector": "histogram",
+        "sparse_scope": "down",
+        "sparse_min_density": 0.6,
+    }
+    for key, expected in expected_values.items():
+        if data.get(key) != expected:
+            errors.append(f"release manifest {key} must be {expected!r}")
+
+    for key in ("verification_date_utc", "format", "expected_runtime"):
+        if not isinstance(data.get(key), str) or not data[key].strip():
+            errors.append(f"release manifest {key} must be a nonempty string")
+
+    benchmark = data.get("confirmed_benchmark")
+    if not isinstance(benchmark, dict):
+        errors.append("release manifest confirmed_benchmark must be an object")
+    else:
+        benchmark_values = {
+            "reference": SUMMARY_PATH,
+            "dense_latency_ms": 193.92,
+            "dense_tokens_per_sec": 88.30,
+            "sparse_latency_ms": 175.33,
+            "sparse_tokens_per_sec": 97.54,
+            "strict_qa": "600/600",
+        }
+        for key, expected in benchmark_values.items():
+            if benchmark.get(key) != expected:
+                errors.append(f"release manifest confirmed_benchmark.{key} must be {expected!r}")
+
+    files = data.get("files")
+    if not isinstance(files, list):
+        errors.append("release manifest files must be an array")
+        return errors
+
+    paths: set[str] = set()
+    for index, record in enumerate(files):
+        if not isinstance(record, dict):
+            errors.append(f"release manifest files[{index}] must be an object")
+            continue
+        path = record.get("path")
+        if not isinstance(path, str) or not path:
+            errors.append(f"release manifest files[{index}].path must be nonempty")
+            continue
+        if path in paths:
+            errors.append(f"release manifest contains duplicate file: {path}")
+        paths.add(path)
+        if not isinstance(record.get("bytes"), int) or record["bytes"] <= 0:
+            errors.append(f"release manifest file must have positive bytes: {path}")
+        if not isinstance(record.get("sha256"), str) or not re.fullmatch(
+            r"[0-9a-f]{64}", record["sha256"]
+        ):
+            errors.append(f"release manifest file has invalid SHA-256: {path}")
+
+    if paths != V09_HF_FILES:
+        missing = sorted(V09_HF_FILES - paths)
+        extra = sorted(paths - V09_HF_FILES)
+        if missing:
+            errors.append(f"release manifest is missing public files: {', '.join(missing)}")
+        if extra:
+            errors.append(f"release manifest has unexpected public files: {', '.join(extra)}")
+    return errors
+
+
+def check_release_manifest(root: Path) -> list[str]:
+    path = root / RELEASE_MANIFEST_PATH
+    if not path.is_file():
+        return [f"release manifest missing: {RELEASE_MANIFEST_PATH}"]
+    try:
+        data = json.loads(read_text(path))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"release manifest cannot be loaded: {exc}"]
+    return [f"release manifest: {error}" for error in validate_release_manifest(data)]
 
 
 def check_tracked_artifacts(paths: list[str]) -> list[str]:
@@ -214,9 +319,11 @@ def main() -> int:
     paths = tracked_files(root)
     errors: list[str] = []
     errors.extend(check_required_files(root, REQUIRED_DOCUMENTS, "documentation"))
+    errors.extend(check_required_files(root, REQUIRED_RELEASE_FILES, "release file"))
     errors.extend(check_required_files(root, REQUIRED_HF_CARDS, "HF card"))
     errors.extend(check_required_files(root, REQUIRED_CONFIGS, "training config"))
     errors.extend(check_summary(root))
+    errors.extend(check_release_manifest(root))
     errors.extend(check_tracked_artifacts(paths))
     errors.extend(check_developer_paths(root, paths))
     errors.extend(check_secrets(root, paths))
@@ -231,9 +338,11 @@ def main() -> int:
         return 1
 
     print(f"[OK] required documentation: {len(REQUIRED_DOCUMENTS)} files")
+    print(f"[OK] release files: {len(REQUIRED_RELEASE_FILES)} files")
     print(f"[OK] Hugging Face cards: {len(REQUIRED_HF_CARDS)} files")
     print(f"[OK] training configs: {len(REQUIRED_CONFIGS)} files")
     print("[OK] canonical benchmark summary and v09a values")
+    print("[OK] v0.9.0 public Hugging Face manifest")
     print(f"[OK] tracked-file hygiene and secret scan: {len(paths)} files")
     print("[OK] internal Markdown links and portable documentation paths")
     print("Release readiness checks passed.")

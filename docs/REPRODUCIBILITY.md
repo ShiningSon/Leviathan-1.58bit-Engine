@@ -22,6 +22,12 @@ sample_outputs.txt
 
 Linear weights are row-major packed ternary values. Embeddings, normalization weights, recurrent tensors, and other structural values are recorded in the package binary and metadata. This is not a standard Transformers checkpoint; use `engine.py --architecture mlgru`.
 
+The v09a public package is pinned by revision, byte size, and SHA-256 in [`releases/v0.9.0_hf_manifest.json`](../releases/v0.9.0_hf_manifest.json). Verify a clean public download without authentication:
+
+```cmd
+python scripts\verify_hf_release.py --download-dir hf_verify_v09a
+```
+
 ## Benchmark prompt set
 
 The strict QA regression set is [`benchmarks/prompts_v02b_qa.json`](../benchmarks/prompts_v02b_qa.json). It contains 20 project prompts. Each item may define:

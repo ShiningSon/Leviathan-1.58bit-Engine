@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "repo_id": "ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a",
+  "resolved_hf_revision": "116a857bdaf2a1118d479d52aedba7e65cbff960",
+  "verification_date_utc": "2026-07-21T09:14:18Z",
+  "package_name": "leviathan_mlgru_200m_instruct_v09a",
+  "architecture": "mlgru",
+  "format": "Leviathan v2; row-major ternary 2-bit, four weights per byte",
+  "expected_runtime": "engine.py --architecture mlgru --prompt-template qa",
+  "parameter_class": "200M-class",
+  "estimated_trainable_parameters": 233388800,
+  "recommended_top_k": 0.1,
+  "selector": "histogram",
+  "sparse_scope": "down",
+  "sparse_min_density": 0.6,
+  "confirmed_benchmark": {
+    "reference": "benchmarks/results/scaling_summary.json",
+    "dense_latency_ms": 193.92,
+    "dense_tokens_per_sec": 88.3,
+    "sparse_latency_ms": 175.33,
+    "sparse_tokens_per_sec": 97.54,
+    "strict_qa": "600/600"
+  },
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 1519,
+      "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3951,
+      "sha256": "ac58b7b5edf0a9900cf3d942f989ca7de114a011f2066751b71069ffd10b5e18"
+    },
+    {
+      "path": "leviathan_mlgru_200m_instruct_v09a.bin",
+      "bytes": 76838400,
+      "sha256": "115ce7bc1113b848d65be9bf417be5e9f3a8ca32e0740328856f406c1d94515d"
+    },
+    {
+      "path": "leviathan_mlgru_200m_instruct_v09a_meta.json",
+      "bytes": 30509,
+      "sha256": "eeeff6157f4053facc4c848076bb729b5b45bb02f831bc463137a349554da1a6"
+    },
+    {
+      "path": "leviathan_mlgru_tokenizer/tokenizer.json",
+      "bytes": 562328,
+      "sha256": "235435acd33d97b37afb9bcd8bd52432dfe91d907a1fd625ebaa21fe2813ebce"
+    },
+    {
+      "path": "leviathan_mlgru_tokenizer/tokenizer_config.json",
+      "bytes": 223,
+      "sha256": "2e82dbc3e20a656b022331e8b616deb37897c4544b5c4489a598793cae589c91"
+    },
+    {
+      "path": "report.json",
+      "bytes": 3474,
+      "sha256": "f0120d3bc645ea0f5ae6083f3e4416f52ed4ecdae75f154db11e4e7c6f083f41"
+    },
+    {
+      "path": "sample_outputs.txt",
+      "bytes": 1748,
+      "sha256": "33cb5dd6cd215e19611fc4aaeb66cd8eab70c9cb368604e1db791f1a1183ff93"
+    }
+  ]
+}

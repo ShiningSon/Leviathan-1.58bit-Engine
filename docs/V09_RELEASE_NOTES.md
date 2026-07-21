@@ -35,7 +35,7 @@ Published Hugging Face repository:
 
 [ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a](https://huggingface.co/ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a)
 
-The package contains a Leviathan runtime binary, metadata, tokenizer, report, sample outputs, and model card. It is not a standard Transformers checkpoint and hosted inference is disabled.
+The package contains a Leviathan runtime binary, metadata, tokenizer, report, sample outputs, and model card. It is not a standard Transformers checkpoint and hosted inference is disabled. The verified public revision, byte sizes, and SHA-256 hashes are frozen in [`releases/v0.9.0_hf_manifest.json`](../releases/v0.9.0_hf_manifest.json).
 
 ## Known limitations
 
@@ -45,4 +45,4 @@ The package contains a Leviathan runtime binary, metadata, tokenizer, report, sa
 - This is not a general sparse speedup claim, Top-K is not always faster, and scaling to other hardware or larger models is not automatically proven.
 - Threshold sparsity and naive block Top-K remain negative experiments and are not active runtime paths.
 
-Before creating the `v0.9.0` tag, confirm CI on Windows and Ubuntu, check the published HF package, and review the remaining hardware-validation gap.
+Final release-gate outcomes are recorded in [`docs/V09_RELEASE_CHECKLIST.md`](V09_RELEASE_CHECKLIST.md). The `v0.9.0` tag and GitHub Release remain intentionally deferred for a separate action.

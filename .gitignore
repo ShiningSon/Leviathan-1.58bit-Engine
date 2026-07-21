@@ -16,6 +16,7 @@ dist/
 .modal/
 runs/
 benchmark_runs/
+/hf_verify_*/
 checkpoints/
 exports/
 *.pt
