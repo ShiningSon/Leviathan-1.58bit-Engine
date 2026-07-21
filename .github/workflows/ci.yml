@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  release-checks:
+    name: Python 3.11 / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile Python sources
+        run: python -m compileall -q engine.py quantizer.py scripts training tests
+
+      - name: Run lightweight unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Validate canonical benchmark summary
+        run: python scripts/validate_benchmark_summary.py
+
+      - name: Check release readiness
+        run: python scripts/check_release_readiness.py
+
+      - name: Smoke-test benchmark CLI help
+        run: python scripts/benchmark_engine.py --help

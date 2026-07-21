@@ -32,11 +32,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--architecture", default="mlgru", help="engine.py --architecture value.")
     parser.add_argument("--prompt-template", default="qa", help="engine.py --prompt-template value.")
     parser.add_argument("--max-new", type=int, default=80, help="engine.py --max-new value.")
-    parser.add_argument("--modes", nargs="+", default=["0", "0.9", "0.8"], help="Top-K values to benchmark.")
+    parser.add_argument("--modes", nargs="+", default=["0"], help="Top-K values to benchmark. Defaults to dense mode only; pass candidate densities explicitly.")
     parser.add_argument("--repeat", type=int, default=3, help="Measured repeats per mode.")
     parser.add_argument("--warmup", type=int, default=1, help="Warmup runs per mode, excluded from averages.")
     parser.add_argument("--mode-schedule", choices=["block", "interleave"], default="block", help="Run modes in contiguous blocks or round-robin order per repeat.")
-    parser.add_argument("--out-dir", default="benchmark_runs/v02b", help="Output directory.")
+    parser.add_argument("--out-dir", default="benchmark_runs/latest", help="Output directory.")
     parser.add_argument("--bin", dest="bin_name", help="Model .bin filename inside --model-dir.")
     parser.add_argument("--meta", dest="meta_name", help="Model metadata JSON filename inside --model-dir.")
     parser.add_argument("--python", default=sys.executable, help="Python executable used to run engine.py.")
@@ -518,7 +518,7 @@ def main() -> int:
 
     if args.prompt_template != "qa":
         print(
-            "WARNING: v0.2b project-specific QA benchmarks should use --prompt-template qa.",
+            "WARNING: Leviathan instruct proof-model QA benchmarks should use --prompt-template qa.",
             file=sys.stderr,
         )
 
