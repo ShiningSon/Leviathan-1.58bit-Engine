@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ShiningSon/Leviathan-1.58bit-Engine/raw/main/benchmarks/schemas/hardware_manifest.schema.json",
+  "title": "Leviathan hardware manifest",
+  "description": "Privacy-limited hardware and runtime metadata for a reproducible Leviathan benchmark submission.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "timestamp_utc",
+    "operating_system",
+    "operating_system_version",
+    "cpu_model",
+    "cpu_vendor",
+    "physical_cores",
+    "logical_cores",
+    "configured_threads",
+    "ram_bytes",
+    "compiler",
+    "compiler_version",
+    "python_version",
+    "pytorch_version",
+    "architecture",
+    "model_repo",
+    "model_revision",
+    "engine_commit",
+    "benchmark_command"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "timestamp_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "operating_system": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operating_system_version": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "cpu_model": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "cpu_vendor": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "physical_cores": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "logical_cores": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "configured_threads": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "ram_bytes": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "compiler": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "compiler_version": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "python_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pytorch_version": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "architecture": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+    },
+    "model_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40,64}$"
+    },
+    "engine_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "benchmark_command": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

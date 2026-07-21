@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import statistics
 import subprocess
@@ -45,11 +47,53 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-top-k-sort", action="store_true", help="Forward engine.py --no-top-k-sort for the experimental Top-K no-sort selection path.")
     parser.add_argument("--top-k-select", choices=["nth", "histogram"], default="nth", help="Forward engine.py --top-k-select for selector experiments.")
     parser.add_argument("--sparse-scope", choices=["all", "ffn", "down", "none"], default="all", help="Forward engine.py --sparse-scope for projection-scoped sparse experiments.")
+    parser.add_argument("--model-repo", help="Model repository identifier recorded in results.json.")
+    parser.add_argument("--model-revision", help="Pinned model or Hugging Face revision recorded in results.json.")
     return parser.parse_args()
 
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def git_commit(root: Path) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    value = completed.stdout.strip().lower()
+    return value if re.fullmatch(r"[0-9a-f]{40}", value) else None
+
+
+def thread_environment() -> dict[str, str | None]:
+    names = (
+        "OMP_NUM_THREADS",
+        "OMP_DYNAMIC",
+        "MKL_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+        "NUMEXPR_NUM_THREADS",
+        "VECLIB_MAXIMUM_THREADS",
+    )
+    return {name: os.environ.get(name) for name in names}
 
 
 def resolve_path(value: str, *, base: Path | None = None) -> Path:
@@ -96,10 +140,42 @@ def model_display_name(model_dir: Path, meta_path: Path) -> str:
     return model_dir.name
 
 
+def model_metadata_identifier(meta_path: Path) -> str:
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return meta_path.stem
+    for key in ("model_id", "package_name", "model_name", "display_name", "release_name"):
+        value = meta.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return meta_path.stem
+
+
 def load_prompts(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        exact_items = data.get("exact_match_regression")
+        if not isinstance(exact_items, list):
+            raise ValueError("Structured prompt files must contain an exact_match_regression list.")
+        structured_prompts: list[dict[str, Any]] = []
+        for index, item in enumerate(exact_items):
+            if not isinstance(item, dict):
+                raise ValueError(f"Exact-match prompt item {index} must be an object.")
+            rules = item.get("rules")
+            if not isinstance(rules, dict):
+                raise ValueError(f"Exact-match prompt item {index} must contain a rules object.")
+            structured_prompts.append(
+                {
+                    "prompt": item.get("prompt"),
+                    "expected": rules.get("required_terms", []),
+                    "forbidden": rules.get("forbidden_terms", []),
+                    "max_words": rules.get("max_words"),
+                }
+            )
+        data = structured_prompts
     if not isinstance(data, list):
-        raise ValueError("Prompt file must contain a JSON list.")
+        raise ValueError("Prompt file must contain a JSON list or a structured holdout object.")
 
     prompts: list[dict[str, Any]] = []
     for index, item in enumerate(data):
@@ -323,6 +399,8 @@ def summarize_mode(mode: str, runs: list[dict[str, Any]]) -> dict[str, Any]:
         "qa_pass_rate": (passes / total) if total else None,
         "avg_latency_ms": mean_or_none(latencies),
         "avg_tokens_per_sec": mean_or_none(speeds),
+        "latency_samples_ms": latencies,
+        "tokens_per_sec_samples": speeds,
         "process_failures": sum(1 for run in measured if run["process"]["returncode"] != 0),
         "parse_failures": sum(1 for run in measured if not run["process"]["parse_ok"]),
     }
@@ -510,6 +588,7 @@ def render_samples(result: dict[str, Any]) -> str:
 
 def main() -> int:
     args = parse_args()
+    started_at_utc = utc_now()
     root = repo_root()
     model_dir = resolve_path(args.model_dir, base=root)
     engine_path = resolve_path(args.engine, base=root)
@@ -544,8 +623,19 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     result: dict[str, Any] = {
+        "schema_version": 2,
         "model": model_display_name(model_dir, meta_path),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": started_at_utc,
+        "started_at_utc": started_at_utc,
+        "completed_at_utc": None,
+        "metadata": {
+            "engine_commit": git_commit(root),
+            "model_metadata_identifier": model_metadata_identifier(meta_path),
+            "model_repo": args.model_repo,
+            "model_revision": args.model_revision,
+            "prompt_file_sha256": sha256_file(prompts_path),
+            "thread_environment": thread_environment(),
+        },
         "settings": {
             "architecture": args.architecture,
             "prompt_template": args.prompt_template,
@@ -623,6 +713,13 @@ def main() -> int:
         result["modes"].append(
             {
                 "mode": mode_result["mode"],
+                "settings": {
+                    "top_k": float(mode_result["mode"]),
+                    "sparse_min_density": args.sparse_min_density,
+                    "no_top_k_sort": args.no_top_k_sort,
+                    "top_k_select": args.top_k_select,
+                    "sparse_scope": args.sparse_scope,
+                },
                 "runs": mode_result["runs"],
                 "summary": summarize_mode(mode_result["mode"], mode_result["runs"]),
             }
@@ -632,6 +729,7 @@ def main() -> int:
     results_md = out_dir / "results.md"
     samples_txt = out_dir / "sample_outputs.txt"
 
+    result["completed_at_utc"] = utc_now()
     results_json.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
     results_md.write_text(render_markdown(result), encoding="utf-8")
     samples_txt.write_text(render_samples(result), encoding="utf-8")
