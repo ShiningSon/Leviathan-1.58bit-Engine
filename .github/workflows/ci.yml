@@ -42,3 +42,12 @@ jobs:
 
       - name: Smoke-test benchmark CLI help
         run: python scripts/benchmark_engine.py --help
+
+      - name: Parse reproducibility schemas and fixtures
+        run: python -c "import json; [json.load(open(path, encoding='utf-8')) for path in ('benchmarks/schemas/hardware_manifest.schema.json', 'benchmarks/schemas/benchmark_submission.schema.json', 'benchmarks/fixtures/benchmark_submission_valid.json', 'benchmarks/prompts_v091_holdout.json')]"
+
+      - name: Smoke-test privacy-limited system collector
+        run: python scripts/collect_system_info.py --json-out system_info_smoke.json
+
+      - name: Validate benchmark submission fixture
+        run: python scripts/validate_benchmark_submission.py benchmarks/fixtures/benchmark_submission_valid.json

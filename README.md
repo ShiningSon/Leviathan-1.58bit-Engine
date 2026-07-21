@@ -93,7 +93,7 @@ python scripts/benchmark_engine.py --model-dir ./leviathan_mlgru_200m_instruct_v
 
 The runner writes `results.json`, `results.md`, and `sample_outputs.txt` under the selected `benchmark_runs/` directory. These are local review artifacts and are intentionally ignored by Git. CPU model, compiler, thread scheduling, background load, and thermal state can change the result; reproduce the method, not an assumed identical number.
 
-Full protocol: [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md). Runner details: [`docs/BENCHMARK_AUTOMATION.md`](docs/BENCHMARK_AUTOMATION.md).
+Full protocol: [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md). Runner details: [`docs/BENCHMARK_AUTOMATION.md`](docs/BENCHMARK_AUTOMATION.md). External CPU results can use the privacy-limited workflow in [`docs/SUBMIT_BENCHMARK.md`](docs/SUBMIT_BENCHMARK.md).
 
 ## Training and export
 
@@ -124,9 +124,14 @@ Never treat a Leviathan package as a standard Transformers checkpoint. It must b
 |-- quantizer.py                      # Leviathan package quantizer/export helper
 |-- benchmarks/
 |   |-- prompts_v02b_qa.json          # 20-prompt strict QA regression set
+|   |-- prompts_v091_holdout.json     # 105-prompt exact/qualitative holdout structure
+|   |-- schemas/                      # portable hardware and submission contracts
 |   `-- results/scaling_summary.json  # canonical compact scaling summary
 |-- scripts/
 |   |-- benchmark_engine.py           # repeatable local benchmark runner
+|   |-- collect_system_info.py        # privacy-limited hardware manifest collector
+|   |-- export_benchmark_submission.py # portable submission exporter
+|   |-- validate_benchmark_submission.py # submission consistency validator
 |   |-- validate_benchmark_summary.py # summary consistency validator
 |   |-- check_release_readiness.py    # repository release checks
 |   `-- publish_hf_package.py         # authenticated HF package uploader
@@ -146,7 +151,7 @@ Never treat a Leviathan package as a standard Transformers checkpoint. It must b
 
 ## Roadmap
 
-### v0.9 research artifact
+### v0.9.0 research artifact (released; immutable)
 
 - [x] Train and export the v09a 200M-class MLGRU proof model.
 - [x] Confirm repeat-30 interleaved dense and histogram Top-K results.
@@ -155,6 +160,15 @@ Never treat a Leviathan package as a standard Transformers checkpoint. It must b
 - [ ] Validate the candidate on additional CPU hardware.
 - [ ] Expand strict QA beyond the 20-prompt project regression set.
 - [x] Create the `v0.9.0` tag and GitHub Release after final review.
+
+### v0.9.1 reproducibility validation
+
+- [x] Add privacy-limited hardware manifests and portable benchmark submission tooling.
+- [x] Add a broader 105-prompt holdout structure with separate exact and qualitative review paths.
+- [x] Record prompt hashes, pinned model metadata, engine commits, timestamps, thread settings, and raw timing samples.
+- [ ] Validate the released candidate on additional CPU hardware.
+- [ ] Run and review the expanded holdout QA protocol before publishing new quality conclusions.
+- [ ] Apply runtime usability improvements identified by independent reproduction attempts.
 
 ### Toward v1.0
 

@@ -29,7 +29,7 @@ From the repository root:
 Current v09a 200M candidate check:
 
 ```cmd
-python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_200m_instruct_v09a --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.08 0.10 0.12 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --out-dir .\benchmark_runs\v09a_200m_histogram_candidates_repeat30
+python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_200m_instruct_v09a --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.08 0.10 0.12 --repeat 30 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --model-repo ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a --model-revision 116a857bdaf2a1118d479d52aedba7e65cbff960 --out-dir .\benchmark_runs\v09a_200m_histogram_candidates_repeat30
 ```
 
 Historical high-density fallback check:
@@ -88,11 +88,25 @@ benchmark_runs/v04_sparse_fallback/results.md
 benchmark_runs/v04_sparse_fallback/sample_outputs.txt
 ```
 
-`results.json` contains the full structured benchmark record, including command settings, per-run process results, per-prompt outputs, parsed latency, parsed tokens/sec, and keyword-match details.
+`results.json` contains the full structured benchmark record, including command settings, per-run process results, per-prompt outputs, parsed latency, parsed tokens/sec, and keyword-match details. v0.9.1 metadata also records the engine commit, optional pinned model repository/revision, model metadata identifier, prompt SHA-256, thread-related environment values, start/completion timestamps, exact sparse settings, and individual latency/throughput sample arrays. Existing benchmark commands remain valid; add `--model-repo` and `--model-revision` when preparing a portable submission.
 
 `results.md` is a review-friendly Markdown summary that can be copied into `BENCHMARK.md` after checking the generated answers.
 
 `sample_outputs.txt` contains the prompt and answer text grouped by mode and repeat.
+
+## v0.9.1 holdout and portable submissions
+
+The structured [`../benchmarks/prompts_v091_holdout.json`](../benchmarks/prompts_v091_holdout.json) file separates automatically scored `exact_match_regression` prompts from `qualitative_review` prompts. The runner loads only the exact section. Qualitative responses require the review process in [`V091_QUALITY_PROTOCOL.md`](V091_QUALITY_PROTOCOL.md).
+
+For a result intended for external review, collect a privacy-limited hardware manifest and export a schema-compatible submission:
+
+```cmd
+python scripts\collect_system_info.py --json-out .\benchmark_runs\external\hardware.json --model-repo ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a --model-revision 116a857bdaf2a1118d479d52aedba7e65cbff960 --benchmark-command "python scripts\benchmark_engine.py --model-dir .\leviathan_mlgru_200m_instruct_v09a --engine .\engine.py --prompts .\benchmarks\prompts_v02b_qa.json --architecture mlgru --prompt-template qa --max-new 80 --modes 0 0.10 --repeat 30 --warmup 1 --sparse-min-density 0.6 --no-top-k-sort --sparse-scope down --top-k-select histogram --mode-schedule interleave --model-repo ShiningSon/Leviathan-MLGRU-200M-TinyStories-Instruct-v09a --model-revision 116a857bdaf2a1118d479d52aedba7e65cbff960 --out-dir .\benchmark_runs\external"
+python scripts\export_benchmark_submission.py --results .\benchmark_runs\external\results.json --hardware-manifest .\benchmark_runs\external\hardware.json --prompts .\benchmarks\prompts_v02b_qa.json --recommended-mode 0.10 --out .\benchmark_runs\external\submission.json
+python scripts\validate_benchmark_submission.py .\benchmark_runs\external\submission.json
+```
+
+The exporter recalculates aggregates and QA totals from raw samples and rejects incomplete results. See [`SUBMIT_BENCHMARK.md`](SUBMIT_BENCHMARK.md) for the full cross-hardware workflow and privacy boundary.
 
 ## Updating BENCHMARK.md
 

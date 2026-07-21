@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ShiningSon/Leviathan-1.58bit-Engine/raw/main/benchmarks/schemas/benchmark_submission.schema.json",
+  "title": "Leviathan benchmark submission",
+  "description": "Portable dense and sparse benchmark measurements with strict-QA evidence and reproducibility metadata.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "created_at_utc",
+    "hardware",
+    "model",
+    "engine_commit",
+    "prompt_set",
+    "benchmark",
+    "modes",
+    "caveats"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "created_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "hardware": {
+      "$ref": "hardware_manifest.schema.json"
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identifier", "hf_repo", "hf_revision", "metadata_identifier"],
+      "properties": {
+        "identifier": {"type": "string", "minLength": 1},
+        "hf_repo": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "hf_revision": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "metadata_identifier": {"type": ["string", "null"], "minLength": 1}
+      }
+    },
+    "engine_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "prompt_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file_name", "sha256", "prompt_count"],
+      "properties": {
+        "file_name": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "prompt_count": {"type": "integer", "minimum": 1}
+      }
+    },
+    "benchmark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["architecture", "prompt_template", "max_new", "warmups", "repeats", "mode_schedule"],
+      "properties": {
+        "architecture": {"type": "string", "minLength": 1},
+        "prompt_template": {"type": "string", "minLength": 1},
+        "max_new": {"type": "integer", "minimum": 1},
+        "warmups": {"type": "integer", "minimum": 0},
+        "repeats": {"type": "integer", "minimum": 1},
+        "mode_schedule": {"enum": ["block", "interleave"]}
+      }
+    },
+    "modes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/mode_result"}
+    },
+    "caveats": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["samples", "mean", "median", "standard_deviation"],
+      "properties": {
+        "samples": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "number", "exclusiveMinimum": 0}
+        },
+        "mean": {"type": "number", "exclusiveMinimum": 0},
+        "median": {"type": "number", "exclusiveMinimum": 0},
+        "standard_deviation": {"type": "number", "minimum": 0}
+      }
+    },
+    "mode_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode_id",
+        "recommended",
+        "settings",
+        "latency_ms",
+        "tokens_per_sec",
+        "qa",
+        "output_checksum",
+        "process_failures",
+        "parse_failures"
+      ],
+      "properties": {
+        "mode_id": {"type": "string", "minLength": 1},
+        "recommended": {"type": "boolean"},
+        "settings": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["top_k", "sparse_min_density", "no_top_k_sort", "top_k_select", "sparse_scope"],
+          "properties": {
+            "top_k": {"type": "number", "minimum": 0, "maximum": 1},
+            "sparse_min_density": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "no_top_k_sort": {"type": "boolean"},
+            "top_k_select": {"enum": ["nth", "histogram"]},
+            "sparse_scope": {"enum": ["all", "ffn", "down", "none"]}
+          }
+        },
+        "latency_ms": {"$ref": "#/$defs/metric"},
+        "tokens_per_sec": {"$ref": "#/$defs/metric"},
+        "qa": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["numerator", "denominator", "rate"],
+          "properties": {
+            "numerator": {"type": "integer", "minimum": 0},
+            "denominator": {"type": "integer", "minimum": 1},
+            "rate": {"type": "number", "minimum": 0, "maximum": 1}
+          }
+        },
+        "output_checksum": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "process_failures": {"const": 0},
+        "parse_failures": {"const": 0}
+      }
+    }
+  }
+}
